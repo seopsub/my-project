@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CMMS Web App</title>
+</head>
+<body>
+  <h1>설비 관리 데이터</h1>
+  <div id="data"></div>
+
+  <script>
+    async function loadData() {
+      const url = "https://docs.google.com/spreadsheets/d/1ORuqpdcCO-oUIvKzbwWwVDqraT21zNKwRGmakUgXT50/edit?gid=0#gid=0/gviz/tq?tqx=out:json";
+      const response = await fetch(url);
+      const text = await response.text();
+      const json = JSON.parse(text.substr(47).slice(0, -2)); // 구글 시트 JSON 파싱
+      const rows = json.table.rows;
+      document.getElementById("data").innerHTML = rows.map(r => r.c.map(c => c?.v).join(" | ")).join("<br>");
+    }
+    loadData();
+  </script>
+</body>
+</html>
