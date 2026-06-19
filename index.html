@@ -9,7 +9,7 @@
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #f8fafc; /* 토스/뱅크 스타일의 미세한 회색빛 배경 */
+      background-color: #f8fafc;
       color: #334155;
       padding-top: 3rem;
       padding-bottom: 3rem;
@@ -17,20 +17,18 @@
     .container {
       max-width: 960px;
     }
-    /* 트렌디한 자산 요약 카드 스타일 */
     .card-summary {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 16px; /* 더 둥글고 트렌디하게 */
+      border-radius: 16px;
       padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
       transition: all 0.25s ease;
     }
     .card-summary:hover {
       transform: translateY(-4px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
-    /* 테이블 컨테이너 */
     .table-container {
       background-color: #ffffff;
       border: 1px solid #e2e8f0;
@@ -51,7 +49,6 @@
       border-bottom: 1px solid #f1f5f9;
       color: #0f172a;
     }
-    /* 세련된 파스텔톤 배지 */
     .badge-asset {
       font-weight: 500;
       padding: 0.35rem 0.65rem;
@@ -64,7 +61,6 @@
     .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
     .badge-기타 { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
 
-    /* 대시보드 상단 포인트 라인 */
     .accent-보험 { border-top: 4px solid #3b82f6; }
     .accent-예금 { border-top: 4px solid #10b981; }
     .accent-연금 { border-top: 4px solid #f59e0b; }
@@ -77,7 +73,7 @@
     <div class="d-flex justify-content-between align-items-center mb-5">
       <div>
         <h1 class="h3 fw-bold text-dark m-0">My 자산 현황</h1>
-        <p class="text-muted small m-0 mt-1">구글 스프레드시트와 실시간으로 동기화됩니다.</p>
+        <p class="text-muted small m-0 mt-1">구글 스프레드시트 실시간 대시보드</p>
       </div>
       <span class="badge bg-dark px-3 py-2 rounded-pill fs-7">Live Sync</span>
     </div>
@@ -112,11 +108,7 @@
   </div>
 
   <script>
-    // ⚙️ 구글 시트 열 인덱스 설정
-    const ASSET_COLUMN_INDEX = 0;    // A열: 자산명
-    const CATEGORY_COLUMN_INDEX = 1; // B열: 구분
-    const JUNE_COLUMN_INDEX = 2;     // C열: 6월 금액
-
+    // 어떤 문자 형태든 숫자로만 안전하게 정제하는 함수
     function parseToNumber(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return 0;
       let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
@@ -124,8 +116,9 @@
       return isNaN(num) ? 0 : num;
     }
 
+    // 숫자에 쉼표(,)를 추가하는 함수
     function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return '0 원';
+      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
       if (cell.f) return cell.f + ' 원';
       const num = parseToNumber(cell);
       return num.toLocaleString('ko-KR') + ' 원';
@@ -145,6 +138,19 @@
           return;
         }
 
+        // 💡 [핵심 버그 수정] 특정 인덱스를 강제하지 않고, 구글 시트에서 열 이름에 맞춰 동적으로 찾아내도록 안전망 구축
+        let assetIdx = 0, categoryIdx = 1, juneIdx = 2; // 기본값 세팅
+        
+        // 구글 시트가 컬럼 정보를 따로 들고 있다면 매핑 시도
+        if (json.table.cols && json.table.cols.length > 0) {
+          json.table.cols.forEach((col, idx) => {
+            const label = col.label ? col.label.trim() : '';
+            if (label.includes('자산')) assetIdx = idx;
+            if (label.includes('구분')) categoryIdx = idx;
+            if (label.includes('6월')) juneIdx = idx;
+          });
+        }
+
         const targetCategories = ['보험', '예금', '연금', '투자'];
         const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
         let otherTotal = 0;
@@ -155,37 +161,42 @@
           const cells = rows[i].c;
           if (!cells) continue;
 
-          const assetVal = cells[ASSET_COLUMN_INDEX] ? (cells[ASSET_COLUMN_INDEX].v ?? '').toString().trim() : '';
-          const categoryVal = cells[CATEGORY_COLUMN_INDEX] ? (cells[CATEGORY_COLUMN_INDEX].v ?? '').toString().trim() : '';
-          const cellJune = cells[JUNE_COLUMN_INDEX];
+          // 데이터가 인덱스 범위 안에 존재하는지 매번 검사 (에러 방어)
+          const cellAsset = cells[assetIdx];
+          const cellCategory = cells[categoryIdx];
+          const cellJune = cells[juneIdx];
 
-          // 💡 [수정] 헤더 및 행에 '계' 또는 '합계'가 포함되어 있다면 계산 및 테이블에서 완전 제외
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계')) {
+          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
+          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
+
+          // 1. 헤더행('자산', '구분')이나 '계', '합계'가 포함된 행은 화면 및 합산에서 스킵
+          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || assetVal === '' && categoryVal === '') {
             continue; 
           }
 
           const juneNum = parseToNumber(cellJune);
 
+          // 2. 항목별 매핑 및 누적 합산
           if (targetCategories.includes(categoryVal)) {
             summaryMap[categoryVal] += juneNum;
           } else if (categoryVal !== '') {
             otherTotal += juneNum;
           }
 
-          // 구분 텍스트별 배지 클래스 지정
           const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
 
-          // 세련된 리스트 행 구성
+          // 3. 상세 테이블 HTML 누적
           bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark">${assetVal}</td>`;
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal}</span></td>`;
+          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
+          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
           bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
           bodyHTML += '</tr>';
         }
         
-        document.getElementById("tableBody").innerHTML = bodyHTML;
+        // 데이터 화면 렌더링
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
 
-        // 트렌디한 카드 UI 생성
+        // 4. 대시보드 카드 생성
         let summaryHTML = '';
         targetCategories.forEach(category => {
           summaryHTML += `
@@ -212,8 +223,8 @@
         document.getElementById("summaryContainer").innerHTML = summaryHTML;
 
       } catch (error) {
-        console.error("데이터 로드 실패:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터를 안전하게 파싱하지 못했습니다.</td></tr>`;
+        console.error("오류 발생:", error);
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 중 시스템 오류가 발생했습니다. 구글 시트의 공유 및 데이터 형식을 점검해 주세요.</td></tr>`;
       }
     }
 
