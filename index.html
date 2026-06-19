@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>통합 자산관리 Dashboard</title>
+  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
@@ -74,7 +76,7 @@
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    /* 포인트 컬러 보더 (부채 테마는 파란색 하락 음봉 네이비 계열 매칭) */
+    /* 포인트 컬러 보더 */
     .accent-투자, .accent-유동자산 { border-top-color: #e15241 !important; } 
     .accent-예금, .accent-비유동자산 { border-top-color: #418df1 !important; } 
     .accent-보험 { border-top-color: #26a69a !important; } 
@@ -108,6 +110,7 @@
 </head>
 <body>
 
+  <!-- 🔒 잠금 화면 -->
   <div id="lockScreen">
     <div class="lock-box text-center">
       <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
@@ -116,10 +119,11 @@
       <input type="password" id="passwordInput" class="form-control lock-input mb-4" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter') verifyPassword()">
       <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
-      <div class="build-version">BUILD v1.5.1</div>
+      <div class="build-version">BUILD v1.5.2</div>
     </div>
   </div>
 
+  <!-- 🏆 메인 대시보드 -->
   <div class="container d-none" id="mainDashboard">
     
     <div class="main-nav-tabs" id="mainNavTabs">
@@ -180,15 +184,14 @@
   </div>
 
   <script>
-    // 🔗 3개 탭 통합 신규 배포 주소 주입 완료!
-    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbxtKqijfgDNen2ZjxLDPipI5TTSZzNn2XMN_ArsXT44-Du7-caqGpkK1tSsbclfzSVR/exec"; 
+    // 🔗 D열 금리 확장형 신규 배포 주소 연동 완료
+    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycby1-ba2LYYB_ZZLkHMhRgNJ71k-xWmiHUCFzTxyg4qdJdFdqo1XAqw_SYfSFCfTnEwQ/exec"; 
 
     let rawServerData = null; 
     let currentTabKey = 'sheet1'; 
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
-    // 가상 가계 연산 연동 버퍼
     let sheet1GrandTotalSum = 0; 
     let globalOurAssetSum = 0;
     let globalDebtSum = 0;
@@ -353,7 +356,8 @@
           c: [
             { v: "나의 자산 (MY ASSET 총액)" },
             { v: "유동자산" },
-            { v: sheet1GrandTotalSum }
+            { v: sheet1GrandTotalSum },
+            { v: "" } // 가상 데이터 패딩
           ]
         });
       }
@@ -365,6 +369,8 @@
         const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
         const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
         const amountNum = parseToNumber(cells[2]?.v);
+        // 🛠️ D열(금리) 원본 데이터 임시 백업 보존 (다음 고도화 단계 연동용)
+        const rateVal = cells[3]?.v ? cells[3].v.toString().trim() : ''; 
 
         if (
           assetVal === '자산' || categoryVal === '구분' || assetVal === '' || 
@@ -386,6 +392,7 @@
           asset: assetVal,
           category: categoryVal !== '' ? categoryVal : '기타',
           amount: amountNum,
+          rate: rateVal, // 가상 객체 백업
           formattedAmount: amountNum.toLocaleString('ko-KR') + ' KRW'
         });
       }
