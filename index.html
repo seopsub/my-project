@@ -13,6 +13,12 @@
     .container {
       max-width: 1000px;
     }
+    .card-summary {
+      background: #ffffff;
+      border-left: 4px solid #0d6efd;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
     .table-container {
       background-color: #ffffff;
       border-radius: 8px;
@@ -25,11 +31,17 @@
 <body>
 
   <div class="container">
-    <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
-      <h1 class="h2 text-primary fw-bold">⚙️ 자산관리 프로그램</h1>
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+      <h1 class="h2 text-primary pointer-event fw-bold">⚙️ 자산관리 프로그램</h1>
       <span class="badge bg-secondary">구글 시트 연동중</span>
     </div>
 
+    <h3 class="h5 mb-3 fw-bold">📋 구분별 6월 합계 요약</h3>
+    <div class="row g-3 mb-4" id="summaryContainer">
+      <div class="col-12 text-muted">데이터를 계산하는 중입니다...</div>
+    </div>
+
+    <h3 class="h5 mb-3 fw-bold">🔍 상세 자산 목록</h3>
     <div class="table-container">
       <div class="table-responsive">
         <table class="table table-hover align-middle" id="assetTable">
@@ -54,13 +66,7 @@
     // 숫자인지 확인하고 쉼표(,)를 추가하는 함수
     function formatCurrency(value) {
       if (value === null || value === undefined || value === '') return '';
-      
-      // 만약 이미 문자열에 쉼표가 있거나 숫자가 아닌 문자가 섞여 있다면 그대로 반환
-      if (isNaN(value)) {
-        return value;
-      }
-      
-      // 숫자라면 천 단위 쉼표 추가
+      if (isNaN(value)) return value;
       return Number(value).toLocaleString('ko-KR');
     }
 
@@ -70,7 +76,6 @@
         const response = await fetch(url);
         const text = await response.text();
         
-        // 구글 시트 JSON 파싱
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows;
 
@@ -79,33 +84,49 @@
           return;
         }
 
-        // 1. 헤더 생성 (첫 번째 행 데이터 기준 - 자산, 구분, 6월 등 순서대로 매핑)
+        // 1. 헤더 구조 파악 및 생성
         const firstRow = rows[0].c;
         const headHTML = firstRow.map(cell => `<th>${cell?.v ?? ''}</th>`).join('');
         document.getElementById("tableHead").innerHTML = headHTML;
 
-        // 2. 데이터 행 생성 (두 번째 행부터 반복)
+        // '구분' 컬럼과 '6월' 컬럼의 인덱스 찾기 (자동 매핑용)
+        let categoryIdx = -1;
+        let juneIdx = -1;
+        firstRow.forEach((cell, idx) => {
+          const colName = cell?.v?.toString() ?? '';
+          if (colName.includes('구분')) categoryIdx = idx;
+          if (colName.includes('6월')) juneIdx = idx;
+        });
+
+        // 구분별 합계를 저장할 객체
+        const summaryMap = {};
+
+        // 2. 데이터 행 생성 및 SUM 계산
         let bodyHTML = '';
         for (let i = 1; i < rows.length; i++) {
           const cells = rows[i].c;
           bodyHTML += '<tr>';
           
+          // SUM을 위한 데이터 추출
+          const category = (categoryIdx !== -1 && cells[categoryIdx]?.v) ? cells[categoryIdx].v.toString() : '기타';
+          const juneValue = (juneIdx !== -1 && cells[juneIdx]?.v) ? Number(cells[juneIdx].v) : 0;
+
+          // 숫자가 맞다면 구분별로 누적 합산
+          if (!isNaN(juneValue)) {
+            summaryMap[category] = (summaryMap[category] || 0) + juneValue;
+          }
+
           cells.forEach((cell, index) => {
             let val = cell?.v ?? '';
-            
-            // 금액이나 숫자 데이터가 들어오는 열(예: '6월' 비용 컬럼 등)에 쉼표 포맷 적용
-            // 숫자로만 이루어진 값이라면 자동으로 쉼표를 찍어줍니다.
             let displayVal = formatCurrency(val);
             
-            // 특정 상태값 배지 스타일 (기존 유지)
             if (val === '가동중') {
               bodyHTML += `<td><span class="badge bg-success">${val}</span></td>`;
             } else if (val === '수리중') {
               bodyHTML += `<td><span class="badge bg-danger">${val}</span></td>`;
             } else {
-              // 오른쪽 정렬이 필요한 금액 데이터인지 체크 (선택 사항: 숫자인 경우 우측 정렬)
               if (!isNaN(val) && val !== '') {
-                bodyHTML += `<text-end class="text-end">${displayVal}</td>`;
+                bodyHTML += `<td class="text-end">${displayVal}</td>`;
               } else {
                 bodyHTML += `<td>${displayVal}</td>`;
               }
@@ -116,10 +137,35 @@
         
         document.getElementById("tableBody").innerHTML = bodyHTML;
 
+        // 3. 📊 요약 장표(카드) 렌더링
+        let summaryHTML = '';
+        const colors = ['border-primary', 'border-success', 'border-warning', 'border-info', 'border-danger'];
+        let colorIdx = 0;
+
+        for (const [key, value] of Object.entries(summaryMap)) {
+          const borderColor = colors[colorIdx % colors.length];
+          summaryHTML += `
+            <div class="col-md-4 col-sm-6">
+              <div class="p-3 card-summary ${borderColor}">
+                <div class="text-muted small fw-bold">${key}</div>
+                <div class="h4 mb-0 fw-bold text-dark mt-1">${formatCurrency(value)} 원</div>
+              </div>
+            </div>
+          `;
+          colorIdx++;
+        }
+
+        // 만약 구분이 없어서 매핑된 게 없다면 안내 문구
+        if (summaryHTML === '') summaryHTML = '<div class="col-12 text-muted">합산할 구분 데이터가 없습니다.</div>';
+        document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
       } catch (error) {
         console.error("데이터 로드 실패:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td class="text-center text-danger py-4">데이터를 불러오지 못했습니다. 시트 권한을 확인하세요.</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td class="text-center text-danger py-4">데이터를 불러오지 못했습니다.</td></tr>`;
       }
     }
 
-    //
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
