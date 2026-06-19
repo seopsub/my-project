@@ -188,20 +188,19 @@
     const CATEGORY_COLUMN_INDEX = 1; 
     const JUNE_COLUMN_INDEX = 2;     
 
-    // 💡 방어 코드가 적용된 숫자 파싱 함수
+    // 문자 형태든 숫자로만 안전하게 정제하는 함수
     function parseToNumber(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return 0;
-      // 값에 문자가 섞여있어도 순수 숫자와 소수점만 추출
       let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
       if (str === '') return 0;
       const num = Number(str);
       return isNaN(num) ? 0 : num;
     }
 
-    // 💡 안전한 통화 포맷팅 함수
+    // 통화 포맷팅 함수
     function formatCurrency(cell) {
       if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원'; // 구글 시트 포맷이 이미 있다면 활용
+      if (cell.f) return cell.f + ' 원';
       const num = parseToNumber(cell);
       return num.toLocaleString('ko-KR') + ' 원';
     }
@@ -212,10 +211,9 @@
         const response = await fetch(url);
         const text = await response.text();
         
-        // JSON 추출 파싱 단계
+        // JSON 파싱 단계
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
-        // 💡 버그 방어선 1: table이나 rows가 아예 없을 때 죽는 것 방지
         if (!json || !json.table || !json.table.rows) {
           document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">구글 시트 데이터 구조를 읽을 수 없습니다.</td></tr>`;
           return;
@@ -235,19 +233,19 @@
         let bodyHTML = '';
 
         for (let i = 0; i < rows.length; i++) {
-          // 💡 버그 방어선 2: 행 자체가 null이거나 내부 c 배열이 깨져있을 때 스킵
-          if (!rows[i] || !rows[i].c) continue;
+          // 💡 [해결] 행 자체가 깨졌거나 데이터 셀 묶음(.c)이 없는 빈 줄 처리 완벽 방어
+          if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
           const cells = rows[i].c;
 
-          // 💡 버그 방어선 3: Optional Chaining (?.) 기법을 도입하여 칸이 아예 개설 안 되어 있어도 에러 안 나게 방어
+          // 💡 [해결] 인덱스에 매칭되는 데이터 방어핀(?.) 꼽기
           const cellAsset = cells[ASSET_COLUMN_INDEX];
           const cellCategory = cells[CATEGORY_COLUMN_INDEX];
           const cellJune = cells[JUNE_COLUMN_INDEX];
 
-          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
-          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
+          const assetVal = (cellAsset && cellAsset.v !== null) ? cellAsset.v.toString().trim() : '';
+          const categoryVal = (cellCategory && cellCategory.v !== null) ? cellCategory.v.toString().trim() : '';
 
-          // 첫 줄 글자 헤더나 빈 행, '계' 제거 조건 필터
+          // 첫 줄 제목행이나 합계/계, 공백 행 걸러내기
           if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
             continue; 
           }
@@ -265,4 +263,48 @@
 
           bodyHTML += '<tr>';
           bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분
+          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
+          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
+          bodyHTML += '</tr>';
+        }
+        
+        // 상세 테이블 삽입
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
+
+        // 총합계 배너 반영
+        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
+
+        // 요약 슬라이더 카드 렌더링
+        let summaryHTML = '';
+        targetCategories.forEach(category => {
+          summaryHTML += `
+            <div class="card-summary accent-${category}">
+              <div class="text-muted small fw-medium">${category}</div>
+              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')}원</div>
+            </div>
+          `;
+        });
+
+        if (otherTotal > 0) {
+          summaryHTML += `
+            <div class="card-summary accent-기타">
+              <div class="text-muted small fw-medium">기타 자산</div>
+              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')}원</div>
+            </div>
+          `;
+        }
+
+        document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+      } catch (error) {
+        // 무한 로딩 상태를 끊고 화면에 명확하게 에러 원인을 표시
+        console.error("오류 발생 원인:", error);
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 시스템 에러 발생: ${error.message}</td></tr>`;
+        document.getElementById("summaryContainer").innerHTML = `<div class="text-danger small p-2">오류로 인해 합산 실패</div>`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
