@@ -13,7 +13,6 @@
       color: #ffffff !important;
       padding-top: 1rem;
       padding-bottom: 3rem;
-      /* 🛠️ [고도화] 모바일 스와이프 시 브라우저 기본 당겨서 새로고침(Pull-to-refresh) 현상 방어 */
       overscroll-behavior-y: contain; 
     }
     .container { max-width: 800px; }
@@ -68,14 +67,18 @@
       .sync-status { font-size: 0.7rem; }
     }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    /* 요약 그리드 */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
     .grid-item { background-color: #0b162c !important; border: 1px solid #172443 !important; padding: 1rem; border-radius: 6px; border-top: 4px solid #58697f; }
-    .grid-item .title { font-size: 0.85rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
-    .grid-item .amount { font-size: 1.15rem; font-weight: 700; color: #ffffff !important; }
-    .grid-item .percent { font-size: 0.8rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
+    .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
+    .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
+    .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    .accent-유동자산 { border-top-color: #e15241 !important; } 
-    .accent-비유동자산 { border-top-color: #418df1 !important; } 
+    /* 🎨 포인트 보더 컬러 매칭 연동 */
+    .accent-투자, .accent-유동자산 { border-top-color: #e15241 !important; } 
+    .accent-예금, .accent-비유동자산 { border-top-color: #418df1 !important; } 
+    .accent-보험 { border-top-color: #26a69a !important; } 
+    .accent-연금 { border-top-color: #ffb300 !important; } 
     .accent-기타자산 { border-top-color: #78889b !important; }
 
     .filter-sort-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem; gap: 10px; flex-wrap: wrap; }
@@ -91,8 +94,10 @@
     .table-hover tbody tr:hover td { background-color: #152441 !important; }
 
     .badge-asset { font-weight: 600; padding: 0.25rem 0.45rem; border-radius: 2px; font-size: 0.75rem; }
-    .badge-유동자산 { background-color: rgba(225, 82, 65, 0.2) !important; color: #f27263 !important; }
-    .badge-비유동자산 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
+    .badge-투자, .badge-유동자산 { background-color: rgba(225, 82, 65, 0.2) !important; color: #f27263 !important; }
+    .badge-예금, .badge-비유동자산 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
+    .badge-보험 { background-color: rgba(38, 166, 154, 0.2) !important; color: #4db6ac !important; }
+    .badge-연금 { background-color: rgba(255, 179, 0, 0.2) !important; color: #ffd54f !important; }
     .badge-기타 { background-color: rgba(120, 136, 155, 0.2) !important; color: #b0bec5 !important; }
     .section-title { font-size: 0.85rem; font-weight: 700; color: #9aa5b5 !important; }
   </style>
@@ -110,7 +115,7 @@
       
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
       
-      <div class="build-version">BUILD v1.2.0</div>
+      <div class="build-version">BUILD v1.3.0</div>
     </div>
   </div>
 
@@ -169,14 +174,12 @@
 
   <script>
     const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycby1-ba2LYYB_ZZLkHMhRgNJ71k-xWmiHUCFzTxyg4qdJdFdqo1XAqw_SYfSFCfTnEwQ/exec"; 
-    // 💡 실제 사용 시 본인의 완벽한 구글 웹 앱 URL 주소 "https://script.google.com/macros/s/AKfycbySYNatGZ6sgXmjZsl5QN-HWOMFuSDpqCgqgzWBOG0T7RoLPaJjfQuV5BK9lb988vJq/exec"를 복사해서 이 따옴표 안에 집어넣어주세요!
 
     let rawServerData = null; 
     let currentTabKey = 'sheet1'; 
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
-    // 🛠️ [고도화] 터치 스와이프 제스처 변수 선언
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -189,20 +192,16 @@
         document.getElementById("lockScreen").classList.add('d-none');
         document.getElementById("mainDashboard").classList.remove('d-none');
         await loadServerData();
-        
-        // 🛠️ [고도화] 대시보드가 인증 오픈된 직후 터치 제스처 스와이프 리스너 가동
         initSwipeGesture();
       } else {
         errorDiv.classList.remove('d-none');
       }
     }
 
-    // 🛠️ [고도화] 손가락 좌우 드래그 스와이프 감지 엔진 함수
     function initSwipeGesture() {
       const dashboard = document.getElementById("mainDashboard");
       
       dashboard.addEventListener('touchstart', (e) => {
-        // 셀렉트 박스나 가로 스크롤 테이블 안에서의 간섭을 막기 위한 예외 처리
         if (e.target.closest('select') || e.target.closest('.table-responsive')) return;
         touchStartX = e.changedTouches[0].screenX;
       }, { passive: true });
@@ -214,18 +213,14 @@
       }, { passive: true });
     }
 
-    // 왼쪽/오른쪽 방향 연산 및 탭 전환 격발 함수
     function handleSwipeAction() {
       const swipeDistance = touchEndX - touchStartX;
-      const swipeThreshold = 80; // 스와이프로 인정할 최소 픽셀 거리 (너무 민감하게 반응하지 않도록 세팅)
+      const swipeThreshold = 80;
 
-      // 슥 밀었을 때 탭 위치 스위칭 연동
       if (Math.abs(swipeDistance) > swipeThreshold) {
         if (swipeDistance > 0 && currentTabKey === 'sheet2') {
-          // 👉 오른쪽으로 밀었을 때: MY ASSET으로 이동
           switchMainTab('sheet1');
         } else if (swipeDistance < 0 && currentTabKey === 'sheet1') {
-          // 👈 왼쪽으로 밀었을 때: OUR ASSET으로 이동
           switchMainTab('sheet2');
         }
       }
@@ -262,17 +257,27 @@
       processAndRenderData();
     }
 
+    // 🛠️ [고도화 반영 영역] 탭별 전광판 타겟 카테고리 완전 이원화
     function processAndRenderData() {
       if (!rawServerData || !rawServerData[currentTabKey]) return;
       
       const rows = rawServerData[currentTabKey].table?.rows || [];
       currentAssetList = [];
 
-      const targetCategories = ['유동자산', '비유동자산'];
-      const summaryMap = { '유동자산': 0, '비유동자산': 0 };
+      // 🎯 중요 분기: MY ASSET은 기존 4대 분류 유지 / OUR ASSET은 대분류 고정
+      let targetCategories = [];
+      const summaryMap = {};
+
+      if (currentTabKey === 'sheet1') {
+        targetCategories = ['투자', '예금', '보험', '연금'];
+        summaryMap['투자'] = 0; summaryMap['예금'] = 0; summaryMap['보험'] = 0; summaryMap['연금'] = 0;
+      } else {
+        targetCategories = ['유동자산', '비유동자산'];
+        summaryMap['유동자산'] = 0; summaryMap['비유동자산'] = 0;
+      }
+
       let otherTotal = 0;
       let grandTotal = 0;
-
       const uniqueCategories = new Set();
 
       for (let i = 0; i < rows.length; i++) {
@@ -309,6 +314,7 @@
 
       document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
 
+      // 🎯 상단 전광판 그리드 빌드 (현재 탭의 타겟 배열 규격에 맞춰 표출)
       let summaryHTML = '';
       targetCategories.forEach(category => {
         const totalVal = summaryMap[category] || 0;
@@ -353,7 +359,7 @@
 
       let bodyHTML = '';
       filteredList.forEach(item => {
-        const coreCategories = ['유동자산', '비유동자산'];
+        const coreCategories = ['투자', '예금', '보험', '연금', '유동자산', '비유동자산'];
         const badgeClass = coreCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
 
         bodyHTML += '<tr>';
