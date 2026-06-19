@@ -1,22 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <title>CMMS Web App</title>
+  <meta charset="UTF-8">
+  <title>Google Sheets 조회</title>
 </head>
 <body>
-  <h1>설비 관리 데이터</h1>
-  <div id="data"></div>
+  <h1>내 Google Sheets 데이터</h1>
+  <div id="output"></div>
 
   <script>
-    async function loadData() {
-      const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json";
+    // Google Sheets API 키 (발급받은 키로 교체하세요)
+    const API_KEY = "YOUR_API_KEY";
+
+    // 스프레드시트 ID (주소에서 추출)
+    const SPREADSHEET_ID = "1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8";
+
+    // 조회할 범위 (예: Sheet1의 A1:D10)
+    const RANGE = "Sheet1!A1:D10";
+
+    async function loadSheet() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
       const response = await fetch(url);
-      const text = await response.text();
-      const json = JSON.parse(text.substr(47).slice(0, -2)); // 구글 시트 JSON 파싱
-      const rows = json.table.rows;
-      document.getElementById("data").innerHTML = rows.map(r => r.c.map(c => c?.v).join(" | ")).join("<br>");
+      const data = await response.json();
+
+      const outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = "<table border='1'>" +
+        data.values.map(row => 
+          "<tr>" + row.map(cell => `<td>${cell}</td>`).join("") + "</tr>"
+        ).join("") +
+        "</table>";
     }
-    loadData();
+
+    loadSheet();
   </script>
 </body>
 </html>
