@@ -51,7 +51,7 @@
       100% { opacity: 0.4; }
     }
 
-    /* 📊 업비트 자산 탭 느낌의 바둑판 4열 그리드 레이아웃 */
+    /* 📊 업비트 자산 탭 느낌의 바둑판 그리드 레이아웃 */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -66,16 +66,56 @@
       border-radius: 6px;
       border-top: 4px solid #58697f;
     }
-    .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; mb: 0.25rem; }
+    .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
     /* 업비트 테마 상단 포인트 컬러 매칭 */
-    .accent-투자 { border-top-color: #e15241 !important; } /* 상승 레드 */
-    .accent-예금 { border-top-color: #418df1 !important; } /* 링크 블루 */
-    .accent-보험 { border-top-color: #26a69a !important; } /* 민트 */
-    .accent-연금 { border-top-color: #ffb300 !important; } /* 옐로우 */
+    .accent-투자 { border-top-color: #e15241 !important; } 
+    .accent-예금 { border-top-color: #418df1 !important; } 
+    .accent-보험 { border-top-color: #26a69a !important; } 
+    .accent-연금 { border-top-color: #ffb300 !important; } 
     .accent-기타 { border-top-color: #78889b !important; }
+
+    /* ⚡ 업비트 스타일 필터 탭 & 정렬 컨트롤러 */
+    .filter-sort-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .filter-btn {
+      background: #111e36;
+      border: 1px solid #172443;
+      color: #9aa5b5;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: #1e3152;
+      color: #ffffff;
+      border-color: #418df1;
+    }
+    .sort-select {
+      background: #111e36;
+      color: #ffffff;
+      border: 1px solid #172443;
+      padding: 0.4rem 1.8rem 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
 
     /* 테이블 스타일 */
     .table-container {
@@ -83,7 +123,6 @@
       border: 1px solid #172443 !important;
       border-radius: 8px;
       padding: 1rem;
-      margin-top: 0.5rem;
     }
     .table {
       margin-bottom: 0;
@@ -155,7 +194,26 @@
       <div style="color: #9aa5b5 !important;" class="small p-2">데이터 계산 중...</div>
     </div>
 
-    <div class="section-title mb-2">🔍 자산별 상세 보유내역</div>
+    <div class="filter-sort-row">
+      <div class="section-title">🔍 자산별 상세 보유내역</div>
+      
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-btn active" onclick="filterCategory('전체')">전체</button>
+        <button class="filter-btn" onclick="filterCategory('투자')">투자</button>
+        <button class="filter-btn" onclick="filterCategory('예금')">예금</button>
+        <button class="filter-btn" onclick="filterCategory('보험')">보험</button>
+        <button class="filter-btn" onclick="filterCategory('연금')">연금</button>
+      </div>
+
+      <div>
+        <select class="form-select sort-select" id="sortSelect" onchange="sortData()">
+          <option value="default">기본 순 정렬</option>
+          <option value="high">보유금액 높은 순</option>
+          <option value="low">보유금액 낮은 순</option>
+        </select>
+      </div>
+    </div>
+
     <div class="table-container">
       <div class="table-responsive">
         <table class="table table-hover align-middle" id="assetTable">
@@ -184,6 +242,10 @@
     const CATEGORY_COLUMN_INDEX = 1; 
     const JUNE_COLUMN_INDEX = 2;     
 
+    // 서버 원본 데이터를 저장해 두고 필터링/정렬할 때 쓸 마스터 배열
+    let currentAssetList = []; 
+    let currentCategoryFilter = '전체';
+
     function getCellString(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return '';
       return cell.v.toString().trim();
@@ -194,13 +256,6 @@
       if (strVal === '') return 0;
       const num = Number(strVal);
       return isNaN(num) ? 0 : num;
-    }
-
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 KRW';
-      if (cell.f) return cell.f + ' KRW';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' KRW';
     }
 
     async function loadData() {
@@ -221,8 +276,8 @@
         const summaryMap = { '투자': 0, '예금': 0, '보험': 0, '연금': 0 };
         let otherTotal = 0;
         let grandTotal = 0; 
-
-        let bodyHTML = '';
+        
+        currentAssetList = []; // 데이터 리셋
 
         for (let i = 0; i < rows.length; i++) {
           if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
@@ -248,19 +303,19 @@
             otherTotal += juneNum;
           }
 
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-white text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-white">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
+          // 마스터 배열에 데이터 보관 (정렬/필터링용 오리지널 소스)
+          currentAssetList.push({
+            asset: assetVal,
+            category: categoryVal !== '' ? categoryVal : '기타',
+            amount: juneNum,
+            formattedAmount: juneNum.toLocaleString('ko-KR') + ' KRW'
+          });
         }
         
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
+        // 메인 총자산 배너 바인딩
         document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
 
-        // 💡 [변경] 도넛 그래프 대신 업비트 투자내역 스타일의 깔끔한 사각형 그리드 배치
+        // 상단 요약 그리드 카드 바인딩
         let summaryHTML = '';
         targetCategories.forEach(category => {
           const totalVal = summaryMap[category] || 0;
@@ -290,10 +345,64 @@
         }
         document.getElementById("summaryContainer").innerHTML = summaryHTML;
 
+        // 테이블 리스트 뷰 그리기 함수 호출
+        renderTable();
+
       } catch (error) {
-        console.error("최상위 에러:", error);
+        console.error("오류:", error);
         document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 대시보드 로드 에러: ${error.message}</td></tr>`;
       }
+    }
+
+    // ⚡ [고도화 추가] 화면에 필터링 및 정렬된 테이블을 렌더링하는 전용 함수
+    function renderTable() {
+      // 1. 카테고리 필터링 진행
+      let filteredList = currentAssetList;
+      if (currentCategoryFilter !== '전체') {
+        filteredList = currentAssetList.filter(item => item.category === currentCategoryFilter);
+      }
+
+      // 2. 셀렉트 박스 기준 정렬 진행
+      const sortType = document.getElementById("sortSelect").value;
+      if (sortType === 'high') {
+        filteredList.sort((a, b) => b.amount - a.amount); // 높은 순
+      } else if (sortType === 'low') {
+        filteredList.sort((a, b) => a.amount - b.amount); // 낮은 순
+      }
+
+      // 3. HTML 생성 및 주입
+      let bodyHTML = '';
+      filteredList.forEach(item => {
+        const targetCategories = ['투자', '예금', '보험', '연금'];
+        const badgeClass = targetCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
+
+        bodyHTML += '<tr>';
+        bodyHTML += `<td class="fw-semibold text-white text-wrap" style="white-space: normal; min-width: 120px;">${item.asset || '-'}</td>`; 
+        bodyHTML += `<td><span class="badge-asset ${badgeClass}">${item.category}</span></td>`;
+        bodyHTML += `<td class="text-end fw-bold text-white">${item.formattedAmount}</td>`;
+        bodyHTML += '</tr>';
+      });
+
+      document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4" style="color:#9aa5b5;">해당 분류에 표시할 내역이 없습니다.</td></tr>`;
+    }
+
+    // ⚡ [고도화 추가] 카테고리 탭 변경 함수
+    function filterCategory(category) {
+      currentCategoryFilter = category;
+      
+      // 탭 활성화 클래스 조절
+      const buttons = document.querySelectorAll('#filterTabs .filter-btn');
+      buttons.forEach(btn => {
+        if (btn.innerText === category) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      renderTable();
+    }
+
+    // ⚡ [고도화 추가] 정렬 옵션 변경 함수
+    function sortData() {
+      renderTable();
     }
 
     window.addEventListener('DOMContentLoaded', loadData);
