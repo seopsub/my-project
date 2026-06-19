@@ -68,28 +68,41 @@
       100% { opacity: 0.3; }
     }
 
-    /* 가로 스크롤 컨테이너 */
+    /* 📱 콤팩트 가로 스크롤 컨테이너 */
     .scroll-container {
       display: flex;
-      gap: 1rem;
+      gap: 0.75rem; /* 간격을 좁혀서 더 밀도감 있게 */
       overflow-x: auto;
-      padding-bottom: 1rem;
+      padding-bottom: 0.75rem;
     }
     .scroll-container::-webkit-scrollbar {
-      height: 6px;
+      height: 4px; /* 스크롤바도 최소화 */
     }
     .scroll-container::-webkit-scrollbar-thumb {
-      background-color: #cbd5e1;
-      border-radius: 3px;
+      background-color: #e2e8f0;
+      border-radius: 10px;
     }
     
+    /* ✨ [디자인 변경] 훨씬 작고 세련된 미니 포커스 카드 */
     .card-summary {
-      flex: 0 0 160px;
+      flex: 0 0 135px; /* 가로폭을 줄여 컴팩트하게 변형 */
       background: #ffffff;
       border: 1px solid #e5e7eb;
-      border-radius: 18px;
-      padding: 1.25rem 1rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      border-radius: 14px; /* 부드러운 라운딩 */
+      padding: 0.85rem 0.85rem; /* 내부 여백을 대폭 줄임 */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+      position: relative;
+    }
+    .card-summary .category-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .card-summary .category-amount {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-top: 0.25rem;
     }
 
     /* 테이블 스타일 */
@@ -130,11 +143,12 @@
     .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
     .badge-기타 { background-color: #f3f4f6; color: #4b5563; }
 
-    .accent-보험 { border-top: 4px solid #3b82f6; }
-    .accent-예금 { border-top: 4px solid #10b981; }
+    /* 미니 카드의 상단 포인트 선 얇게 조정 */
+    .accent-보험 { border-top: 3px solid #3b82f6; }
+    .accent-예금 { border-top: 3px solid #10b981; }
     .accent-연금 { border-top: 4px solid #f59e0b; }
     .accent-투자 { border-top: 4px solid #ef4444; }
-    .accent-기타 { border-top: 4px solid #6b7280; }
+    .accent-기타 { border-top: 3px solid #6b7280; }
   </style>
 </head>
 <body>
@@ -152,13 +166,13 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <h3 class="fs-6 fw-bold text-secondary m-0">항목별 요약</h3>
+      <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider m-0" style="font-size: 0.8rem;">항목별 요약</h3>
     </div>
     <div class="scroll-container mb-4" id="summaryContainer">
       <div class="text-muted small p-2">데이터를 불러오는 중입니다...</div>
     </div>
 
-    <h3 class="fs-6 fw-bold text-secondary mb-2">상세 자산 내역</h3>
+    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">상세 자산 내역</h3>
     <div class="table-container">
       <div class="table-responsive">
         <table class="table align-middle" id="assetTable">
@@ -183,12 +197,10 @@
   </div>
 
   <script>
-    // 강제 고정된 인덱스 정의
     const ASSET_COLUMN_INDEX = 0;    
     const CATEGORY_COLUMN_INDEX = 1; 
     const JUNE_COLUMN_INDEX = 2;     
 
-    // 문자 형태든 숫자로만 안전하게 정제하는 함수
     function parseToNumber(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return 0;
       let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
@@ -197,7 +209,6 @@
       return isNaN(num) ? 0 : num;
     }
 
-    // 통화 포맷팅 함수
     function formatCurrency(cell) {
       if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
       if (cell.f) return cell.f + ' 원';
@@ -211,7 +222,6 @@
         const response = await fetch(url);
         const text = await response.text();
         
-        // JSON 파싱 단계
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
         if (!json || !json.table || !json.table.rows) {
@@ -233,11 +243,9 @@
         let bodyHTML = '';
 
         for (let i = 0; i < rows.length; i++) {
-          // 💡 [해결] 행 자체가 깨졌거나 데이터 셀 묶음(.c)이 없는 빈 줄 처리 완벽 방어
           if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
           const cells = rows[i].c;
 
-          // 💡 [해결] 인덱스에 매칭되는 데이터 방어핀(?.) 꼽기
           const cellAsset = cells[ASSET_COLUMN_INDEX];
           const cellCategory = cells[CATEGORY_COLUMN_INDEX];
           const cellJune = cells[JUNE_COLUMN_INDEX];
@@ -245,7 +253,6 @@
           const assetVal = (cellAsset && cellAsset.v !== null) ? cellAsset.v.toString().trim() : '';
           const categoryVal = (cellCategory && cellCategory.v !== null) ? cellCategory.v.toString().trim() : '';
 
-          // 첫 줄 제목행이나 합계/계, 공백 행 걸러내기
           if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
             continue; 
           }
@@ -268,19 +275,16 @@
           bodyHTML += '</tr>';
         }
         
-        // 상세 테이블 삽입
         document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-
-        // 총합계 배너 반영
         document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
 
-        // 요약 슬라이더 카드 렌더링
+        // 💡 콤팩트 스케일이 적용된 미니멀 요약 카드 생성
         let summaryHTML = '';
         targetCategories.forEach(category => {
           summaryHTML += `
             <div class="card-summary accent-${category}">
-              <div class="text-muted small fw-medium">${category}</div>
-              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')}원</div>
+              <div class="category-title">${category}</div>
+              <div class="category-amount">${summaryMap[category].toLocaleString('ko-KR')}원</div>
             </div>
           `;
         });
@@ -288,8 +292,8 @@
         if (otherTotal > 0) {
           summaryHTML += `
             <div class="card-summary accent-기타">
-              <div class="text-muted small fw-medium">기타 자산</div>
-              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')}원</div>
+              <div class="category-title">기타 자산</div>
+              <div class="category-amount">${otherTotal.toLocaleString('ko-KR')}원</div>
             </div>
           `;
         }
@@ -297,10 +301,8 @@
         document.getElementById("summaryContainer").innerHTML = summaryHTML;
 
       } catch (error) {
-        // 무한 로딩 상태를 끊고 화면에 명확하게 에러 원인을 표시
         console.error("오류 발생 원인:", error);
         document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 시스템 에러 발생: ${error.message}</td></tr>`;
-        document.getElementById("summaryContainer").innerHTML = `<div class="text-danger small p-2">오류로 인해 합산 실패</div>`;
       }
     }
 
