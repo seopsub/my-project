@@ -4,19 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자산관리 Dashboard - Upbit Style</title>
-  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
-  
-  <!-- 📊 Chart.js 라이브러리 및 비율 표기용 플러그인 추가 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-  
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #091224 !important; /* 💙 업비트 딥 네이비 배경 */
+      background-color: #091224 !important; /* 💙 업비트 시그니처 다크 네이비 */
       color: #ffffff !important;
       padding-top: 2rem;
       padding-bottom: 3rem;
@@ -31,7 +24,7 @@
       border: 1px solid #172443 !important;
       border-radius: 8px;
       padding: 1.75rem 1.5rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     /* 🟢 실시간 동기화 네온 점 */
@@ -58,47 +51,33 @@
       100% { opacity: 0.4; }
     }
 
-    /* 대시보드 박스 */
-    .dashboard-row {
-      background-color: #0b162c !important;
-      border: 1px solid #172443 !important;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .chart-box {
-      max-width: 180px;
-      margin: 0 auto;
-    }
-
-    .summary-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      justify-content: center;
+    /* 📊 업비트 자산 탭 느낌의 바둑판 4열 그리드 레이아웃 */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
     }
     
-    /* 호가창 느낌의 아이템 열 */
-    .mini-bar-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #111e36 !important;
-      padding: 0.6rem 1rem;
-      border-radius: 4px;
-      border-left: 4px solid #58697f;
+    .grid-item {
+      background-color: #0b162c !important;
+      border: 1px solid #172443 !important;
+      padding: 1rem;
+      border-radius: 6px;
+      border-top: 4px solid #58697f;
     }
-    .mini-bar-item .title { font-size: 0.85rem; font-weight: 600; color: #9aa5b5 !important; }
-    .mini-bar-item .amount { font-size: 0.95rem; font-weight: 700; color: #ffffff !important; }
+    .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; mb: 0.25rem; }
+    .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
+    .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    /* 업비트 테마 컬러 매칭 */
-    .border-투자 { border-left-color: #e15241 !important; } 
-    .border-예금 { border-left-color: #418df1 !important; } 
-    .border-보험 { border-left-color: #26a69a !important; } 
-    .border-연금 { border-left-color: #ffb300 !important; } 
-    .border-기타 { border-left-color: #78889b !important; }
+    /* 업비트 테마 상단 포인트 컬러 매칭 */
+    .accent-투자 { border-top-color: #e15241 !important; } /* 상승 레드 */
+    .accent-예금 { border-top-color: #418df1 !important; } /* 링크 블루 */
+    .accent-보험 { border-top-color: #26a69a !important; } /* 민트 */
+    .accent-연금 { border-top-color: #ffb300 !important; } /* 옐로우 */
+    .accent-기타 { border-top-color: #78889b !important; }
 
-    /* 테이블 스타일 (색상 묻힘 전면 방어) */
+    /* 테이블 스타일 */
     .table-container {
       background-color: #0b162c !important;
       border: 1px solid #172443 !important;
@@ -128,7 +107,7 @@
       white-space: nowrap;
     }
     .table-hover tbody tr:hover td {
-      background-color: #152441 !important; /* 마우스 올렸을 때 행 배경색 */
+      background-color: #152441 !important;
     }
 
     /* 배지 스타일 */
@@ -156,7 +135,6 @@
 
   <div class="container">
     
-    <!-- 🏆 1. 업비트 스타일 보유자산 총액 배너 -->
     <div class="main-total-banner">
       <div class="row align-items-center">
         <div class="col-8 text-start">
@@ -172,24 +150,11 @@
       </div>
     </div>
 
-    <!-- 📊 2. 업비트 포트폴리오 요약 비율 -->
-    <div class="section-title mb-2">📊 자산 보유 비중</div>
-    <div class="dashboard-row">
-      <div class="row align-items-center g-4">
-        <div class="col-sm-5 text-center">
-          <div class="chart-box">
-            <canvas id="assetDonutChart" width="180" height="180"></canvas>
-          </div>
-        </div>
-        <div class="col-sm-7">
-          <div class="summary-list" id="summaryContainer">
-            <div style="color: #9aa5b5 !important;" class="small p-2">데이터 분석 중...</div>
-          </div>
-        </div>
-      </div>
+    <div class="section-title mb-2">📊 보유 자산별 요약</div>
+    <div class="summary-grid" id="summaryContainer">
+      <div style="color: #9aa5b5 !important;" class="small p-2">데이터 계산 중...</div>
     </div>
 
-    <!-- 🔍 3. 상세 내역 테이블 -->
     <div class="section-title mb-2">🔍 자산별 상세 보유내역</div>
     <div class="table-container">
       <div class="table-responsive">
@@ -218,8 +183,6 @@
     const ASSET_COLUMN_INDEX = 0;    
     const CATEGORY_COLUMN_INDEX = 1; 
     const JUNE_COLUMN_INDEX = 2;     
-
-    let myChart = null; 
 
     function getCellString(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return '';
@@ -294,18 +257,21 @@
           bodyHTML += '</tr>';
         }
         
-        // 💡 중요 안전망: 텍스트 및 테이블을 차트 그리기 "전에" 먼저 밀어넣어 무조건 띄웁니다.
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4" style="color:#9aa5b5;">표시할 내역이 없습니다.</td></tr>`;
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
         document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
 
+        // 💡 [변경] 도넛 그래프 대신 업비트 투자내역 스타일의 깔끔한 사각형 그리드 배치
         let summaryHTML = '';
         targetCategories.forEach(category => {
           const totalVal = summaryMap[category] || 0;
           const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
           summaryHTML += `
-            <div class="mini-bar-item border-${category}">
-              <span class="title">${category} <small class="ms-1" style="color: #6cb1ff;">${percentage}%</small></span>
-              <span class="amount">${totalVal.toLocaleString('ko-KR')} KRW</span>
+            <div class="grid-item accent-${category}">
+              <div class="title">${category}</div>
+              <div class="amount">
+                ${totalVal.toLocaleString('ko-KR')}
+                <span class="percent">${percentage}%</span>
+              </div>
             </div>
           `;
         });
@@ -313,69 +279,20 @@
         if (otherTotal > 0) {
           const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
           summaryHTML += `
-            <div class="mini-bar-item border-기타">
-              <span class="title">기타 자산 <small class="ms-1" style="color: #b0bec5;">${otherPercentage}%</small></span>
-              <span class="amount">${otherTotal.toLocaleString('ko-KR')} KRW</span>
+            <div class="grid-item accent-기타">
+              <div class="title">기타 자산</div>
+              <div class="amount">
+                ${otherTotal.toLocaleString('ko-KR')}
+                <span class="percent">${otherPercentage}%</span>
+              </div>
             </div>
           `;
         }
         document.getElementById("summaryContainer").innerHTML = summaryHTML;
 
-        // 💡 완전히 차단 격리된 차트 렌더링 존 (플러그인 충돌 원천 배제)
-        try {
-          const chartCanvas = document.getElementById('assetDonutChart');
-          if (chartCanvas && typeof Chart !== 'undefined') {
-            const chartLabels = [...targetCategories];
-            const chartData = [summaryMap['투자'], summaryMap['예금'], summaryMap['보험'], summaryMap['연금']];
-            const chartColors = ['#e15241', '#418df1', '#26a69a', '#ffb300'];
-
-            if (otherTotal > 0) {
-              chartLabels.push('기타 자산');
-              chartData.push(otherTotal);
-              chartColors.push('#78889b');
-            }
-
-            const ctx = chartCanvas.getContext('2d');
-            if (myChart) myChart.destroy(); 
-
-            myChart = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: chartLabels,
-                datasets: [{
-                  data: chartData,
-                  backgroundColor: chartColors,
-                  borderWidth: 0,
-                  hoverOffset: 4
-                }]
-              },
-              plugins: [typeof ChartDataLabels !== 'undefined' ? ChartDataLabels : {}],
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                  legend: { display: false },
-                  datalabels: {
-                    color: '#ffffff',
-                    font: { weight: 'bold', size: 10, family: 'Pretendard' },
-                    formatter: (value) => {
-                      if (grandTotal === 0) return "";
-                      let percentage = (value * 100 / grandTotal).toFixed(1);
-                      return percentage > 5 ? percentage + "%" : ""; 
-                    }
-                  }
-                },
-                cutout: '70%'
-              }
-            });
-          }
-        } catch (chartError) {
-          console.error("차트 에러 유연하게 우회함:", chartError);
-        }
-
       } catch (error) {
-        console.error("최상위 에러 수집 로그:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 대시보드 연동 에러: ${error.message}</td></tr>`;
+        console.error("최상위 에러:", error);
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 대시보드 로드 에러: ${error.message}</td></tr>`;
       }
     }
 
