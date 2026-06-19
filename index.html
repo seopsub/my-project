@@ -26,8 +26,7 @@
     .lock-box {
       background-color: #0b162c; border: 1px solid #1a2e56; 
       padding: 3rem 2rem; border-radius: 12px; width: 100%; max-width: 420px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-      position: relative;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); position: relative;
     }
     .lock-logo { font-size: 1.5rem; font-weight: 800; color: #418df1; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
     .lock-input {
@@ -40,45 +39,49 @@
       padding: 0.85rem !important; font-size: 1rem; border-radius: 6px !important;
     }
     .error-msg { background-color: rgba(225, 82, 65, 0.1); border: 1px solid rgba(225, 82, 65, 0.3); color: #f27263; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; }
+    .build-version { position: absolute; bottom: 12px; right: 16px; font-size: 0.7rem; color: #4e5b73; font-weight: 600; letter-spacing: 0.5px; }
 
-    .build-version {
-      position: absolute; bottom: 12px; right: 16px;
-      font-size: 0.7rem; color: #4e5b73; font-weight: 600; letter-spacing: 0.5px;
-    }
-
-    /* ⚡ 업비트 스타일 최상단 메인 탭 메뉴 */
+    /* ⚡ 업비트 스타일 최상단 메인 탭 메뉴 (3분할 확장) */
     .main-nav-tabs {
       display: flex; background-color: #0b162c; border: 1px solid #172443; border-radius: 8px; padding: 4px; margin-bottom: 1.5rem;
     }
     .nav-tab-btn {
-      flex: 1; background: transparent; border: none; color: #9aa5b5; font-weight: 700; padding: 0.75rem; font-size: 0.95rem; border-radius: 6px; transition: all 0.2s;
+      flex: 1; background: transparent; border: none; color: #9aa5b5; font-weight: 700; padding: 0.75rem; font-size: 0.85rem; border-radius: 6px; transition: all 0.2s;
     }
     .nav-tab-btn:hover { color: #ffffff; }
     .nav-tab-btn.active { background-color: #111e36; color: #418df1; border: 1px solid #172443; }
 
     /* 대시보드 UI 스타일 */
-    .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 1.5rem; }
+    .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.5rem 1.25rem; margin-bottom: 1rem; }
     .sync-status { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #00e676 !important; white-space: nowrap; }
     .sync-dot { width: 6px; height: 6px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; animation: blink 2s infinite; }
     @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
+    /* 📊 가계 알짜 순자산 서브 패널 */
+    .net-worth-sub-banner {
+      background-color: #111e36; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 600; color: #9aa5b5; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+    }
+
     @media (max-width: 576px) {
       #grandTotalDisplay { font-size: 1.8rem !important; }
       .sync-status { font-size: 0.7rem; }
+      .nav-tab-btn { font-size: 0.75rem; padding: 0.6rem 0.2rem; }
     }
 
-    /* 요약 그리드 */
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
     .grid-item { background-color: #0b162c !important; border: 1px solid #172443 !important; padding: 1rem; border-radius: 6px; border-top: 4px solid #58697f; }
     .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
+    /* 포인트 컬러 보더 (부채 테마는 파란색 하락 음봉 네이비 계열 매칭) */
     .accent-투자, .accent-유동자산 { border-top-color: #e15241 !important; } 
     .accent-예금, .accent-비유동자산 { border-top-color: #418df1 !important; } 
     .accent-보험 { border-top-color: #26a69a !important; } 
     .accent-연금 { border-top-color: #ffb300 !important; } 
-    .accent-기타자산 { border-top-color: #78889b !important; }
+    .accent-유동부채 { border-top-color: #5b86c4 !important; }
+    .accent-비유동부채 { border-top-color: #2b4b7e !important; }
+    .accent-기타자산, .accent-기타부채 { border-top-color: #78889b !important; }
 
     .filter-sort-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem; gap: 10px; flex-wrap: wrap; }
     .filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -97,6 +100,8 @@
     .badge-예금, .badge-비유동자산 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
     .badge-보험 { background-color: rgba(38, 166, 154, 0.2) !important; color: #4db6ac !important; }
     .badge-연금 { background-color: rgba(255, 179, 0, 0.2) !important; color: #ffd54f !important; }
+    .badge-유동부채 { background-color: rgba(91, 134, 196, 0.2) !important; color: #8cb4ec !important; }
+    .badge-비유동부채 { background-color: rgba(43, 75, 126, 0.2) !important; color: #5c7fb8 !important; }
     .badge-기타 { background-color: rgba(120, 136, 155, 0.2) !important; color: #b0bec5 !important; }
     .section-title { font-size: 0.85rem; font-weight: 700; color: #9aa5b5 !important; }
   </style>
@@ -108,13 +113,10 @@
       <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
       <h5 class="text-white fw-bold mb-2">보안 인증 시스템</h5>
       <p class="small mb-4" style="color: #9aa5b5;">금융 데이터 보호를 위해 비밀번호를 입력해 주세요.</p>
-      
       <input type="password" id="passwordInput" class="form-control lock-input mb-4" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter') verifyPassword()">
       <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
-      
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
-      
-      <div class="build-version">BUILD v1.4.0</div>
+      <div class="build-version">BUILD v1.5.1</div>
     </div>
   </div>
 
@@ -123,6 +125,7 @@
     <div class="main-nav-tabs" id="mainNavTabs">
       <button class="nav-tab-btn active" onclick="switchMainTab('sheet1')">MY ASSET</button>
       <button class="nav-tab-btn" onclick="switchMainTab('sheet2')">OUR ASSET</button>
+      <button class="nav-tab-btn" onclick="switchMainTab('sheet3')">DEBT</button>
     </div>
 
     <div class="main-total-banner">
@@ -140,7 +143,12 @@
       </div>
     </div>
 
-    <div class="section-title mb-2">📊 보유 자산별 요약</div>
+    <div class="net-worth-sub-banner" id="netWorthBanner">
+      <span>👪 우리 가족 순자산 (자산 - 부채)</span>
+      <span class="text-white" id="netWorthDisplay">0 KRW</span>
+    </div>
+
+    <div class="section-title mb-2">📊 보유 항목별 요약</div>
     <div class="summary-grid" id="summaryContainer"></div>
 
     <div class="filter-sort-row">
@@ -149,8 +157,8 @@
       <div>
         <select class="form-select sort-select" id="sortSelect" onchange="sortData()">
           <option value="default">기본 순 정렬</option>
-          <option value="high">보유금액 높은 순</option>
-          <option value="low">보유금액 낮은 순</option>
+          <option value="high">금액 높은 순</option>
+          <option value="low">금액 낮은 순</option>
         </select>
       </div>
     </div>
@@ -160,9 +168,9 @@
         <table class="table table-hover align-middle">
           <thead>
             <tr>
-              <th>자산명</th>
+              <th id="thName">자산명</th>
               <th>구분</th>
-              <th class="text-end">보유금액(KRW)</th>
+              <th class="text-end" id="thAmount">보유금액(KRW)</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -172,15 +180,18 @@
   </div>
 
   <script>
-    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycby1-ba2LYYB_ZZLkHMhRgNJ71k-xWmiHUCFzTxyg4qdJdFdqo1XAqw_SYfSFCfTnEwQ/exec"; 
+    // 🔗 3개 탭 통합 신규 배포 주소 주입 완료!
+    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbxtKqijfgDNen2ZjxLDPipI5TTSZzNn2XMN_ArsXT44-Du7-caqGpkK1tSsbclfzSVR/exec"; 
 
     let rawServerData = null; 
     let currentTabKey = 'sheet1'; 
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
-    // 💡 [핵심 추가] 시트1의 SUM 값을 들고 있을 내부 보안 변수
+    // 가상 가계 연산 연동 버퍼
     let sheet1GrandTotalSum = 0; 
+    let globalOurAssetSum = 0;
+    let globalDebtSum = 0;
 
     let touchStartX = 0;
     let touchEndX = 0;
@@ -220,10 +231,12 @@
       const swipeThreshold = 80;
 
       if (Math.abs(swipeDistance) > swipeThreshold) {
-        if (swipeDistance > 0 && currentTabKey === 'sheet2') {
-          switchMainTab('sheet1');
-        } else if (swipeDistance < 0 && currentTabKey === 'sheet1') {
-          switchMainTab('sheet2');
+        if (swipeDistance > 0) { 
+          if (currentTabKey === 'sheet2') switchMainTab('sheet1');
+          else if (currentTabKey === 'sheet3') switchMainTab('sheet2');
+        } else { 
+          if (currentTabKey === 'sheet1') switchMainTab('sheet2');
+          else if (currentTabKey === 'sheet2') switchMainTab('sheet3');
         }
       }
     }
@@ -241,34 +254,45 @@
         const response = await fetch(MY_SECRET_URL + "?_=" + new Date().getTime());
         rawServerData = await response.json();
         
-        // 🛠️ [고도화 엔진 가동] 
-        // 1단계. 우선 시트1(MY ASSET) 데이터를 빠르게 예비 순회해서 진짜 최종 SUM 값을 먼저 연산해 냅니다.
-        calculateSheet1Total();
-        
+        calculateAdvancedBalance();
         switchMainTab('sheet1');
       } catch (error) {
         document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 데이터 동기화 실패 또는 연동 오류</td></tr>`;
       }
     }
 
-    // 🛠️ [신규 함수] 시트1의 SUM 자산 총액을 엑셀 함수 없이 가상 연산해내는 보안 함수
-    function calculateSheet1Total() {
+    function calculateAdvancedBalance() {
       sheet1GrandTotalSum = 0;
-      if (!rawServerData || !rawServerData.sheet1) return;
-      const rows = rawServerData.sheet1.table?.rows || [];
-      
-      for (let i = 0; i < rows.length; i++) {
-        if (!rows[i] || !rows[i].c) continue;
-        const cells = rows[i].c;
-        const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
-        const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
-        const amountNum = parseToNumber(cells[2]?.v);
+      globalOurAssetSum = 0;
+      globalDebtSum = 0;
 
-        if (assetVal === '자산' || categoryVal === '구분' || assetVal === '' || assetVal.includes('계') || categoryVal.includes('계')) {
-          continue;
-        }
-        sheet1GrandTotalSum += amountNum;
+      if (rawServerData.sheet1?.table?.rows) {
+        rawServerData.sheet1.table.rows.forEach(r => {
+          const amt = parseToNumber(r.c[2]?.v);
+          const name = r.c[0]?.v?.toString() || '';
+          if (!name.includes('계') && name !== '자산' && name !== '') sheet1GrandTotalSum += amt;
+        });
       }
+
+      globalOurAssetSum += sheet1GrandTotalSum; 
+      if (rawServerData.sheet2?.table?.rows) {
+        rawServerData.sheet2.table.rows.forEach(r => {
+          const amt = parseToNumber(r.c[2]?.v);
+          const name = r.c[0]?.v?.toString() || '';
+          if (!name.includes('계') && name !== '자산' && name !== '') globalOurAssetSum += amt;
+        });
+      }
+
+      if (rawServerData.sheet3?.table?.rows) {
+        rawServerData.sheet3.table.rows.forEach(r => {
+          const amt = parseToNumber(r.c[2]?.v);
+          const name = r.c[0]?.v?.toString() || '';
+          if (!name.includes('계') && name !== '부채' && name !== '') globalDebtSum += amt;
+        });
+      }
+
+      const netWorth = globalOurAssetSum - globalDebtSum;
+      document.getElementById("netWorthDisplay").innerText = netWorth.toLocaleString('ko-KR') + " KRW";
     }
 
     function switchMainTab(tabKey) {
@@ -276,10 +300,27 @@
       currentCategoryFilter = '전체';
       
       const tabs = document.querySelectorAll('#mainNavTabs .nav-tab-btn');
-      tabs[tabKey === 'sheet1' ? 0 : 1].classList.add('active');
-      tabs[tabKey === 'sheet1' ? 1 : 0].classList.remove('active');
+      tabs.forEach(t => t.classList.remove('active'));
+      if (tabKey === 'sheet1') tabs[0].classList.add('active');
+      else if (tabKey === 'sheet2') tabs[1].classList.add('active');
+      else if (tabKey === 'sheet3') tabs[2].classList.add('active');
 
-      document.getElementById("totalBannerTitle").innerText = tabKey === 'sheet1' ? "나의 총 보유자산" : "공동 및 배우자 총 자산";
+      if (tabKey === 'sheet1') {
+        document.getElementById("totalBannerTitle").innerText = "나의 총 보유자산";
+        document.getElementById("thName").innerText = "자산명";
+        document.getElementById("thAmount").innerText = "보유금액(KRW)";
+        document.getElementById("netWorthBanner").classList.remove('d-none');
+      } else if (tabKey === 'sheet2') {
+        document.getElementById("totalBannerTitle").innerText = "공동 및 배우자 총 자산";
+        document.getElementById("thName").innerText = "자산명";
+        document.getElementById("thAmount").innerText = "보유금액(KRW)";
+        document.getElementById("netWorthBanner").classList.remove('d-none');
+      } else {
+        document.getElementById("totalBannerTitle").innerText = "우리 가족 총 부채";
+        document.getElementById("thName").innerText = "부채명";
+        document.getElementById("thAmount").innerText = "대출잔액(KRW)";
+        document.getElementById("netWorthBanner").classList.add('d-none'); 
+      }
 
       processAndRenderData();
     }
@@ -295,26 +336,24 @@
 
       if (currentTabKey === 'sheet1') {
         targetCategories = ['투자', '예금', '보험', '연금'];
-        summaryMap['투자'] = 0; summaryMap['예금'] = 0; summaryMap['보험'] = 0; summaryMap['연금'] = 0;
-      } else {
+      } else if (currentTabKey === 'sheet2') {
         targetCategories = ['유동자산', '비유동자산'];
-        summaryMap['유동자산'] = 0; summaryMap['비유동자산'] = 0;
+      } else {
+        targetCategories = ['유동부채', '비유동부채']; 
       }
+      targetCategories.forEach(cat => summaryMap[cat] = 0);
 
       let otherTotal = 0;
       let grandTotal = 0;
       const uniqueCategories = new Set();
 
-      // 🛠️ [가상 주입 로직 연동]
-      // 만약 현재 그리는 화면이 'sheet2 (OUR ASSET)' 탭이라면, 
-      // 구글 시트2 데이터를 훑기 전에 '나의 자산(시트1 SUM)'을 유동자산 배열 객체로 임의로 가공해서 메모리에 선행 주입합니다!
       let blendedRows = [...rows];
       if (currentTabKey === 'sheet2' && sheet1GrandTotalSum > 0) {
         blendedRows.unshift({
           c: [
-            { v: "나의 자산 (MY ASSET 총액)" }, // 자산명 자동으로 명명
-            { v: "유동자산" },                  // 카테고리 고정
-            { v: sheet1GrandTotalSum }         // 가상 참조한 연산 SUM 값
+            { v: "나의 자산 (MY ASSET 총액)" },
+            { v: "유동자산" },
+            { v: sheet1GrandTotalSum }
           ]
         });
       }
@@ -329,7 +368,7 @@
 
         if (
           assetVal === '자산' || categoryVal === '구분' || assetVal === '' || 
-          assetVal.includes('계') || categoryVal.includes('계')
+          assetVal.includes('계') || categoryVal.includes('계') || assetVal === '부채'
         ) {
           continue; 
         }
@@ -367,9 +406,11 @@
 
       if (otherTotal > 0) {
         const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
+        const otherLabel = currentTabKey === 'sheet3' ? '기타 부채' : '기타 자산';
+        const accentClass = currentTabKey === 'sheet3' ? 'accent-기타부채' : 'accent-기타자산';
         summaryHTML += `
-          <div class="grid-item accent-기타자산">
-            <div class="title">기타 자산</div>
+          <div class="grid-item ${accentClass}">
+            <div class="title">${otherLabel}</div>
             <div class="amount">${otherTotal.toLocaleString('ko-KR')}<span class="percent">${otherPercentage}%</span></div>
           </div>
         `;
@@ -397,7 +438,7 @@
 
       let bodyHTML = '';
       filteredList.forEach(item => {
-        const coreCategories = ['투자', '예금', '보험', '연금', '유동자산', '비유동자산'];
+        const coreCategories = ['투자', '예금', '보험', '연금', '유동자산', '비유동자산', '유동부채', '비유동부채'];
         const badgeClass = coreCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
 
         bodyHTML += '<tr>';
