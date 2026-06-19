@@ -9,7 +9,7 @@
 
   <script>
     async function loadData() {
-      const url = "https://docs.google.com/spreadsheets/d/1ORuqpdcCO-oUIvKzbwWwVDqraT21zNKwRGmakUgXT50/gviz/tq?tqx=out:json";
+      const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json";
       const response = await fetch(url);
       const text = await response.text();
       const json = JSON.parse(text.substr(47).slice(0, -2)); // 구글 시트 JSON 파싱
