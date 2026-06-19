@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자산관리 Dashboard</title>
-  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
@@ -30,14 +28,13 @@
       margin-bottom: 2rem;
     }
 
-    /* 가로 스크롤 컨테이너 (PC에서는 자연스러운 그리드로 보이고, 모바일선 스크롤) */
+    /* 가로 스크롤 컨테이너 */
     .scroll-container {
       display: flex;
       gap: 1rem;
       overflow-x: auto;
       padding-bottom: 1rem;
     }
-    /* PC 환경을 위해 브라우저 기본 스크롤바 스타일 살짝 지정 */
     .scroll-container::-webkit-scrollbar {
       height: 6px;
     }
@@ -55,7 +52,7 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
     }
 
-    /* 테이블 스타일 */
+    /* 테이블 컨테이너 및 💡 한 줄 정렬 방어 스타일 */
     .table-container {
       background-color: #ffffff;
       border-radius: 20px;
@@ -70,12 +67,14 @@
       border-bottom: 1px solid #e5e7eb;
       padding: 0.85rem 0.5rem;
       font-size: 0.9rem;
+      white-space: nowrap; /* 헤더 줄바꿈 방지 */
     }
     .table td {
       padding: 1rem 0.5rem;
       border-bottom: 1px solid #f3f4f6;
       color: #111827;
       font-size: 0.95rem;
+      white-space: nowrap; /* 💡 금액 및 데이터가 한 줄로 표시되도록 강제 설정 */
     }
 
     /* 파스텔 배지 */
@@ -102,14 +101,12 @@
 
   <div class="container">
     
-    <!-- 🏆 1. 전체 총합계 배너 -->
     <div class="main-total-banner text-center">
       <div class="opacity-75 small fw-medium text-uppercase tracking-wider">나의 자산 총합계 (6월)</div>
       <div class="display-5 fw-bold my-2" id="grandTotalDisplay">0<span class="fs-4 fw-normal opacity-75 ms-1">원</span></div>
       <span class="badge bg-white bg-opacity-20 rounded-pill small" style="font-size: 0.75rem;">Live Syncing...</span>
     </div>
 
-    <!-- 📊 2. 자산 항목별 카드 -->
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h3 class="fs-6 fw-bold text-secondary m-0">항목별 요약</h3>
     </div>
@@ -117,16 +114,15 @@
       <div class="text-muted small p-2">계산 중...</div>
     </div>
 
-    <!-- 🔍 3. 상세 내역 테이블 -->
     <h3 class="fs-6 fw-bold text-secondary mb-2">상세 자산 내역</h3>
     <div class="table-container">
       <div class="table-responsive">
         <table class="table align-middle" id="assetTable">
           <thead>
             <tr>
-              <th style="width: 45%;">자산명</th>
-              <th style="width: 25%;">구분</th>
-              <th style="width: 30%;" class="text-end">금액</th>
+              <th>자산명</th>
+              <th>구분</th>
+              <th class="text-end">금액</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -143,10 +139,9 @@
   </div>
 
   <script>
-    // 💡 [버그 해결] 추적 인덱스를 확실하게 하드코딩으로 고정하여 PC 환경 에러 차단
-    const ASSET_COLUMN_INDEX = 0;    // A열: 자산명
-    const CATEGORY_COLUMN_INDEX = 1; // B열: 구분
-    const JUNE_COLUMN_INDEX = 2;     // C열: 6월 금액
+    const ASSET_COLUMN_INDEX = 0;    
+    const CATEGORY_COLUMN_INDEX = 1; 
+    const JUNE_COLUMN_INDEX = 2;     
 
     function parseToNumber(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return 0;
@@ -187,7 +182,6 @@
           const cells = rows[i].c;
           if (!cells) continue;
 
-          // 고정된 인덱스로 안전하게 접근
           const cellAsset = cells[ASSET_COLUMN_INDEX];
           const cellCategory = cells[CATEGORY_COLUMN_INDEX];
           const cellJune = cells[JUNE_COLUMN_INDEX];
@@ -195,7 +189,6 @@
           const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
           const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
 
-          // 첫 줄 글자 헤더나 '계'가 들어간 행 필터링
           if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
             continue; 
           }
@@ -212,7 +205,7 @@
           const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
 
           bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
+          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; // 자산명만 너무 길어지면 자연스럽게 개행되도록 하되 최소 가로폭을 확보
           bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
           bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
           bodyHTML += '</tr>';
@@ -220,10 +213,8 @@
         
         document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
 
-        // 상단 배너 업데이트
         document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal opacity-75 ms-1">원</span>`;
 
-        // 하위 카드 빌드
         let summaryHTML = '';
         targetCategories.forEach(category => {
           summaryHTML += `
@@ -247,7 +238,7 @@
 
       } catch (error) {
         console.error("오류 발생:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패 (PC 브라우저 콘솔을 확인하세요)</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패</td></tr>`;
       }
     }
 
