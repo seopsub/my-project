@@ -6,7 +6,10 @@
   <title>자산관리 Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -78,7 +81,7 @@
       margin-bottom: 2rem;
     }
     .chart-box {
-      max-width: 180px;
+      max-width: 200px; /* 비율 글자 여유 공간을 위해 소폭 확장 */
       margin: 0 auto;
     }
 
@@ -132,12 +135,6 @@
       font-size: 0.95rem;
       white-space: nowrap;
     }
-    .badge-asset {
-      font-weight: 500;
-      padding: 0.3rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-    }
     .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
     .badge-예금 { background-color: #ecfdf5; color: #047857; }
     .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
@@ -164,7 +161,7 @@
       <div class="row align-items-center g-4">
         <div class="col-sm-5 text-center">
           <div class="chart-box">
-            <canvas id="assetDonutChart" width="180" height="180"></canvas>
+            <canvas id="assetDonutChart" width="200" height="200"></canvas>
           </div>
         </div>
         <div class="col-sm-7">
@@ -281,75 +278,5 @@
         let summaryHTML = '';
         targetCategories.forEach(category => {
           const totalVal = summaryMap[category] || 0;
-          summaryHTML += `
-            <div class="mini-bar-item border-${category}">
-              <span class="title">${category}</span>
-              <span class="amount">${totalVal.toLocaleString('ko-KR')} 원</span>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="mini-bar-item border-기타">
-              <span class="title">기타 자산</span>
-              <span class="amount">${otherTotal.toLocaleString('ko-KR')} 원</span>
-            </div>
-          `;
-        }
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-        // 💡 [독립 실행 분리 버그 해결] 차트 렌더링을 완전히 분리된 try-catch 블록으로 묶음
-        // 차트를 그리다가 에러가 나거나 캔버스를 못 찾아도 테이블과 합계는 정상 표기됩니다.
-        try {
-          const chartCanvas = document.getElementById('assetDonutChart');
-          if (chartCanvas) {
-            const chartLabels = [...targetCategories];
-            const chartData = [summaryMap['투자'], summaryMap['예금'], summaryMap['보험'], summaryMap['연금']];
-            const chartColors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
-
-            if (otherTotal > 0) {
-              chartLabels.push('기타 자산');
-              chartData.push(otherTotal);
-              chartColors.push('#6b7280');
-            }
-
-            const ctx = chartCanvas.getContext('2d');
-            if (myChart) myChart.destroy(); 
-
-            myChart = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: chartLabels,
-                datasets: [{
-                  data: chartData,
-                  backgroundColor: chartColors,
-                  borderWidth: 0,
-                  hoverOffset: 4
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                  legend: { display: false }
-                },
-                cutout: '75%'
-              }
-            });
-          }
-        } catch (chartError) {
-          console.error("차트 생성 중 오류:", chartError);
-        }
-
-      } catch (error) {
-        console.error("오류 발생 원인:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 시스템 에러 발생: ${error.message}</td></tr>`;
-      }
-    }
-
-    // 문서가 완전히 생성된 후 연동 실행 처리
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+          // 오른쪽 목록에도 콤팩트하게 비율(%) 노출해 주기
+          const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
