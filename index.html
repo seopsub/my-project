@@ -69,7 +69,7 @@
       100% { opacity: 0.3; }
     }
 
-    /* 📊 차트와 요약 카드를 품는 대시보드 섹션 */
+    /* 차트와 요약 카드를 품는 대시보드 섹션 */
     .dashboard-row {
       background: #ffffff;
       border-radius: 20px;
@@ -82,7 +82,6 @@
       margin: 0 auto;
     }
 
-    /* 📱 콤팩트 세로형/가로형 유연한 레이아웃 */
     .summary-list {
       display: flex;
       flex-direction: column;
@@ -95,4 +94,154 @@
       justify-content: space-between;
       align-items: center;
       background: #f9fafb;
-      padding: 0.6
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      border-left: 4px solid #cbd5e1;
+    }
+    .mini-bar-item .title { font-size: 0.85rem; font-weight: 600; color: #4b5563; }
+    .mini-bar-item .amount { font-size: 0.9rem; font-weight: 700; color: #111827; }
+
+    /* 차트 색상 매칭 보더 */
+    .border-투자 { border-left-color: #ef4444; }
+    .border-예금 { border-left-color: #10b981; }
+    .border-보험 { border-left-color: #3b82f6; }
+    .border-연금 { border-left-color: #f59e0b; }
+    .border-기타 { border-left-color: #6b7280; }
+
+    /* 테이블 스타일 */
+    .table-container {
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .table th {
+      font-weight: 600;
+      color: #6b7280;
+      background-color: #f9fafb !important;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.85rem 0.5rem;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .table td {
+      padding: 1rem 0.5rem;
+      border-bottom: 1px solid #f3f4f6;
+      color: #111827;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+    .badge-asset {
+      font-weight: 500;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+    .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
+    .badge-예금 { background-color: #ecfdf5; color: #047857; }
+    .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
+    .badge-연금 { background-color: #fffbeb; color: #b45309; }
+    .badge-기타 { background-color: #f3f4f6; color: #4b5563; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <div class="main-total-banner text-center">
+      <div class="text-white-50 small fw-semibold text-uppercase tracking-wide mb-2" style="letter-spacing: 1px;">나의 총 자산 현황</div>
+      <div class="display-4 fw-bold text-white my-3 tracking-tight" id="grandTotalDisplay" style="font-size: 2.8rem;">0원</div>
+      
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span>LIVE SYNC</span>
+      </div>
+    </div>
+
+    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">자산 포트폴리오 요약</h3>
+    <div class="dashboard-row">
+      <div class="row align-items-center g-4">
+        <div class="col-sm-5 text-center">
+          <div class="chart-box">
+            <canvas id="assetDonutChart" width="180" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-sm-7">
+          <div class="summary-list" id="summaryContainer">
+            <div class="text-muted small p-2">데이터를 분석하는 중입니다...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">상세 자산 내역</h3>
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table align-middle" id="assetTable">
+          <thead>
+            <tr>
+              <th>자산명</th>
+              <th>구분</th>
+              <th class="text-end">금액</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="3" class="text-center text-muted py-5">
+                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                자산 정보를 파싱하고 있습니다...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ASSET_COLUMN_INDEX = 0;    
+    const CATEGORY_COLUMN_INDEX = 1; 
+    const JUNE_COLUMN_INDEX = 2;     
+
+    let myChart = null; 
+
+    function parseToNumber(cell) {
+      if (!cell || cell.v === null || cell.v === undefined) return 0;
+      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
+      if (str === '') return 0;
+      const num = Number(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function formatCurrency(cell) {
+      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
+      if (cell.f) return cell.f + ' 원';
+      const num = parseToNumber(cell);
+      return num.toLocaleString('ko-KR') + ' 원';
+    }
+
+    async function loadData() {
+      try {
+        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
+        const response = await fetch(url);
+        const text = await response.text();
+        
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table?.rows || [];
+
+        if (rows.length === 0) {
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 비어 있습니다.</td></tr>`;
+          return;
+        }
+
+        const targetCategories = ['투자', '예금', '보험', '연금'];
+        const summaryMap = { '투자': 0, '예금': 0, '보험': 0, '연금': 0 };
+        let otherTotal = 0;
+        let grandTotal = 0; 
+
+        let bodyHTML = '';
+
+        for (let i = 0; i < rows.length; i++) {
+          if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
+          const cells =
