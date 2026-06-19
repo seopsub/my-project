@@ -17,10 +17,6 @@
       background: #ffffff;
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s;
-    }
-    .card-summary:hover {
-      transform: translateY(-2px);
     }
     .table-container {
       background-color: #ffffff;
@@ -54,13 +50,16 @@
     <div class="table-container">
       <div class="table-responsive">
         <table class="table table-hover align-middle" id="assetTable">
-          <thead class="table-light">
-            <tr id="tableHead">
-              </tr>
+          <thead class="table-dark">
+            <tr>
+              <th>자산</th>
+              <th>구분</th>
+              <th>6월 금액</th>
+            </tr>
           </thead>
           <tbody id="tableBody">
             <tr>
-              <td colspan="100%" class="text-center text-muted py-4">
+              <td colspan="3" class="text-center text-muted py-4">
                 <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                 데이터를 불러오는 중입니다...
               </td>
@@ -72,11 +71,22 @@
   </div>
 
   <script>
-    // 숫자인지 확인하고 쉼표(,)를 추가하는 함수
+    // 숫자가 아닌 문자(콤마, 공백, 원 등)를 제거하고 순수 숫자로만 변환하는 함수
+    function parseToNumber(value) {
+      if (value === null || value === undefined || value === '') return 0;
+      
+      // 구글 시트의 객체 형태 데이터 처리 (.f나 .v 속성 방어용)
+      let str = typeof value === 'object' ? (value.v ?? '') : value;
+      str = str.toString().replace(/[^0-9.-]/g, ''); // 숫자, 마이너스, 소수점 제외 전멸
+      
+      const num = Number(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    // 숫자에 쉼표(,)를 추가하는 함수
     function formatCurrency(value) {
-      if (value === null || value === undefined || value === '') return '0';
-      if (isNaN(value)) return value;
-      return Number(value).toLocaleString('ko-KR');
+      const num = parseToNumber(value);
+      return num.toLocaleString('ko-KR');
     }
 
     async function loadData() {
@@ -89,69 +99,63 @@
         const rows = json.table.rows;
 
         if (rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td class="text-center py-4">데이터가 없습니다.</td></tr>`;
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
           return;
         }
 
-        // 1. 헤더 생성
+        // 첫 번째 행(헤더) 분석하여 각 컬럼의 정확한 위치(인덱스) 추적
         const firstRow = rows[0].c;
-        const headHTML = firstRow.map(cell => `<th>${cell?.v ?? ''}</th>`).join('');
-        document.getElementById("tableHead").innerHTML = headHTML;
-
-        // '구분' 컬럼과 '6월' 컬럼 인덱스 찾기
+        let assetIdx = -1;
         let categoryIdx = -1;
         let juneIdx = -1;
+
         firstRow.forEach((cell, idx) => {
-          const colName = cell?.v?.toString().trim() ?? '';
-          if (colName === '구분') categoryIdx = idx;
-          if (colName === '6월') juneIdx = idx;
+          if (!cell) return;
+          const colName = cell.v ? cell.v.toString().trim() : '';
+          
+          if (colName.includes('자산')) assetIdx = idx;
+          if (colName.includes('구분')) categoryIdx = idx;
+          if (colName.includes('6월')) juneIdx = idx;
         });
 
-        // 💡 지정한 4개 항목만 딱 초기화 해두기 (데이터가 없어도 0원으로 뜨게 설정)
+        // 💡 4대 항목 맵 초기화
         const targetCategories = ['보험', '예금', '연금', '투자'];
         const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
-        let otherTotal = 0; // 혹시나 그 외의 항목이 있다면 합산할 곳
+        let otherTotal = 0;
 
-        // 2. 데이터 행 생성 및 원하는 항목별 SUM 계산
         let bodyHTML = '';
+
+        // 두 번째 줄(데이터)부터 반복
         for (let i = 1; i < rows.length; i++) {
           const cells = rows[i].c;
           if (!cells) continue;
 
-          bodyHTML += '<tr>';
-          
-          // 구분값과 6월 금액 추출 (공백 제거 처리)
-          const rawCategory = (categoryIdx !== -1 && cells[categoryIdx]?.v) ? cells[categoryIdx].v.toString().trim() : '';
-          const juneValue = (juneIdx !== -1 && cells[juneIdx]?.v) ? Number(cells[juneIdx].v) : 0;
+          // 인덱스를 기반으로 각 행의 안전한 데이터 추출
+          const assetVal = (assetIdx !== -1 && cells[assetIdx]) ? (cells[assetIdx].f ?? cells[assetIdx].v ?? '') : '';
+          const categoryVal = (categoryIdx !== -1 && cells[categoryIdx]) ? (cells[categoryIdx].v ?? '').toString().trim() : '기타';
+          const juneRawVal = (juneIdx !== -1 && cells[juneIdx]) ? cells[juneIdx] : '';
 
-          // 보험, 예금, 연금, 투자에 해당하면 합산하고 아니면 기타로 분류
-          if (!isNaN(juneValue)) {
-            if (targetCategories.includes(rawCategory)) {
-              summaryMap[rawCategory] += juneValue;
-            } else {
-              otherTotal += juneValue;
-            }
+          // 6월 금액 숫자로 파싱 후 합산 로직 실행
+          const juneNum = parseToNumber(juneRawVal);
+
+          if (targetCategories.includes(categoryVal)) {
+            summaryMap[categoryVal] += juneNum;
+          } else {
+            otherTotal += juneNum;
           }
 
-          cells.forEach((cell) => {
-            let val = cell?.v ?? '';
-            let displayVal = formatCurrency(val);
-            
-            if (!isNaN(val) && val !== '') {
-              bodyHTML += `<td class="text-end fw-mono">${displayVal}</td>`;
-            } else {
-              bodyHTML += `<td>${displayVal}</td>`;
-            }
-          });
+          // 상세 테이블 그리기 (자산 | 구분 | 6월 순서 고정)
+          bodyHTML += '<tr>';
+          bodyHTML += `<td>${assetVal}</td>`;
+          bodyHTML += `<td><span class="badge bg-light text-dark border">${categoryVal}</span></td>`;
+          bodyHTML += `<td class="text-end fw-bold text-primary">${formatCurrency(juneRawVal)} 원</td>`;
           bodyHTML += '</tr>';
         }
         
         document.getElementById("tableBody").innerHTML = bodyHTML;
 
-        // 3. 📊 요약 카드 렌더링
+        // 요약 대시보드 카드 생성
         let summaryHTML = '';
-        
-        // 지정된 4대 항목 순서대로 카드 만들기
         targetCategories.forEach(category => {
           summaryHTML += `
             <div class="col-md-3 col-sm-6">
@@ -163,7 +167,6 @@
           `;
         });
 
-        // 만약 보험/예금/연금/투자 외에 다른 구분 데이터가 존재했다면 '기타' 카드도 띄워줌
         if (otherTotal > 0) {
           summaryHTML += `
             <div class="col-md-3 col-sm-6">
@@ -179,7 +182,7 @@
 
       } catch (error) {
         console.error("데이터 로드 실패:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td class="text-center text-danger py-4">데이터를 불러오지 못했습니다. 컬럼명을 확인해 보세요.</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">데이터 파싱 오류가 발생했습니다. 구글 시트의 컬럼명을 확인해 주세요.</td></tr>`;
       }
     }
 
