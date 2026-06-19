@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>보안 자산관리 Dashboard</title>
+  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
@@ -78,11 +80,27 @@
 
     /* 대시보드 UI 스타일 */
     .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 2rem; }
-    .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; color: #00e676 !important; }
+    
+    /* 🛠️ [고도화] 모바일 글자 깨짐 방지 스타일 업그레이드 */
+    .sync-status { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 5px; 
+      font-size: 0.75rem; 
+      font-weight: 600; 
+      color: #00e676 !important; 
+      white-space: nowrap; /* 텍스트가 강제로 줄바꿈되는 현상 원천 차단 */
+    }
     .sync-dot { width: 6px; height: 6px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; animation: blink 2s infinite; }
     @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+    /* 모바일에서 금액 서체가 너무 크면 배너를 삐져나갈 수 있어 크기 동적 조절 */
+    @media (max-width: 576px) {
+      #grandTotalDisplay { font-size: 1.8rem !important; }
+      .sync-status { font-size: 0.7rem; }
+    }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
     .grid-item { background-color: #0b162c !important; border: 1px solid #172443 !important; padding: 1rem; border-radius: 6px; border-top: 4px solid #58697f; }
     .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
@@ -117,6 +135,7 @@
 </head>
 <body>
 
+  <!-- 🔒 잠금 화면 레이어 -->
   <div id="lockScreen">
     <div class="lock-box text-center">
       <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
@@ -130,17 +149,19 @@
     </div>
   </div>
 
+  <!-- 🏆 메인 대시보드 본문 -->
   <div class="container d-none" id="mainDashboard">
     <div class="main-total-banner">
       <div class="row align-items-center">
-        <div class="col-8 text-start">
+        <div class="col-7 col-sm-8 text-start">
           <div class="small fw-medium mb-1" style="color: #9aa5b5 !important;">총 보유자산</div>
           <div class="h2 fw-bold my-1 tracking-tight" id="grandTotalDisplay" style="font-size: 2.2rem; color: #e15241 !important;">0 KRW</div>
         </div>
-        <div class="col-4 text-end">
+        <div class="col-5 col-sm-4 text-end">
+          <!-- 🛠️ [수정] 모바일 깨짐 방지를 위해 문구를 'LIVE'로 압축 변경 -->
           <div class="sync-status">
             <span class="sync-dot"></span>
-            <span>보안 실시간 동기화</span>
+            <span>LIVE</span>
           </div>
         </div>
       </div>
@@ -184,7 +205,6 @@
   </div>
 
   <script>
-    // 🔗 전달해주신 완전한 구글 배포 주소 세팅 완료
     const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbySYNatGZ6sgXmjZsl5QN-HWOMFuSDpqCgqgzWBOG0T7RoLPaJjfQuV5BK9lb988vJq/exec";
 
     let currentAssetList = []; 
@@ -194,7 +214,6 @@
       const password = document.getElementById("passwordInput").value;
       const errorDiv = document.getElementById("lockError");
       
-      // 🔐 [비밀번호 교정 완료] 1235 설정 반영
       if (password === "1235") {
         errorDiv.classList.add('d-none');
         document.getElementById("lockScreen").classList.add('d-none');
