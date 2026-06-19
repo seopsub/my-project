@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>자산관리 Dashboard</title>
+  <title>자산관리 Dashboard - Upbit Style</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   
@@ -13,8 +13,8 @@
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #f3f4f6;
-      color: #1f2937;
+      background-color: #091224; /* 💙 업비트 특유의 깊은 다크 네이비 배경 */
+      color: #ffffff;
       padding-top: 2rem;
       padding-bottom: 3rem;
     }
@@ -22,348 +22,72 @@
       max-width: 800px;
     }
     
-    /* 메인 총합계 배너 */
+    /* 🏆 업비트 스타일 자산 총액 배너 */
     .main-total-banner {
-      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-      color: #ffffff;
-      border-radius: 24px;
-      padding: 2.5rem 1.5rem;
-      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.3);
-      margin-bottom: 2rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .main-total-banner::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);
-      pointer-events: none;
+      background-color: #0b162c; /* 살짝 밝은 네이비 섹션 분리 */
+      border: 1px solid #172443;
+      border-radius: 8px; /* 업비트는 라운딩을 과하게 주지 않고 깔끔하게 떨어뜨림 */
+      padding: 1.75rem 1.5rem;
+      margin-bottom: 1.5rem;
     }
 
-    /* 실시간 동기화 네온 점 */
+    /* 🟢 실시간 동기화 네온 점 */
     .sync-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 6px 14px;
-      border-radius: 100px;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #cbd5e1;
+      color: #00e676; /* 형광 그린 */
       letter-spacing: 0.5px;
     }
     .sync-dot {
-      width: 7px;
-      height: 7px;
-      background-color: #10b981;
+      width: 6px;
+      height: 6px;
+      background-color: #00e676;
       border-radius: 50%;
-      box-shadow: 0 0 8px #10b981;
+      box-shadow: 0 0 6px #00e676;
       animation: blink 2s infinite;
     }
     @keyframes blink {
-      0% { opacity: 0.3; }
+      0% { opacity: 0.4; }
       50% { opacity: 1; }
-      100% { opacity: 0.3; }
+      100% { opacity: 0.4; }
     }
 
     /* 차트와 요약 카드를 품는 대시보드 섹션 */
     .dashboard-row {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 1.25rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-      margin-bottom: 2rem;
+      background-color: #0b162c;
+      border: 1px solid #172443;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
     }
     .chart-box {
-      max-width: 200px;
+      max-width: 180px;
       margin: 0 auto;
     }
 
     .summary-list {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
       justify-content: center;
     }
     
+    /* 업비트 호가창/자산 탭 느낌의 아이템 열 */
     .mini-bar-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #f9fafb;
+      background: #111e36;
       padding: 0.6rem 1rem;
-      border-radius: 12px;
-      border-left: 4px solid #cbd5e1;
+      border-radius: 4px;
+      border-left: 4px solid #58697f;
     }
-    .mini-bar-item .title { font-size: 0.85rem; font-weight: 600; color: #4b5563; }
-    .mini-bar-item .amount { font-size: 0.9rem; font-weight: 700; color: #111827; }
+    .mini-bar-item .title { font-size: 0.85rem; font-weight: 600; color: #9aa5b5; }
+    .mini-bar-item .amount { font-size: 0.95rem; font-weight: 700; color: #ffffff; }
 
-    /* 차트 색상 매칭 보더 */
-    .border-투자 { border-left-color: #ef4444; }
-    .border-예금 { border-left-color: #10b981; }
-    .border-보험 { border-left-color: #3b82f6; }
-    .border-연금 { border-left-color: #f59e0b; }
-    .border-기타 { border-left-color: #6b7280; }
-
-    /* 테이블 스타일 */
-    .table-container {
-      background-color: #ffffff;
-      border-radius: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
-      padding: 1.25rem;
-      margin-top: 1rem;
-    }
-    .table th {
-      font-weight: 600;
-      color: #6b7280;
-      background-color: #f9fafb !important;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0.85rem 0.5rem;
-      font-size: 0.9rem;
-      white-space: nowrap;
-    }
-    .table td {
-      padding: 1rem 0.5rem;
-      border-bottom: 1px solid #f3f4f6;
-      color: #111827;
-      font-size: 0.95rem;
-      white-space: nowrap;
-    }
-    .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
-    .badge-예금 { background-color: #ecfdf5; color: #047857; }
-    .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
-    .badge-연금 { background-color: #fffbeb; color: #b45309; }
-    .badge-기타 { background-color: #f3f4f6; color: #4b5563; }
-  </style>
-</head>
-<body>
-
-  <div class="container">
-    
-    <div class="main-total-banner text-center">
-      <div class="text-white-50 small fw-semibold text-uppercase tracking-wide mb-2" style="letter-spacing: 1px;">나의 총 자산 현황</div>
-      <div class="display-4 fw-bold text-white my-3 tracking-tight" id="grandTotalDisplay" style="font-size: 2.8rem;">0원</div>
-      
-      <div class="sync-status">
-        <span class="sync-dot"></span>
-        <span>LIVE SYNC</span>
-      </div>
-    </div>
-
-    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">자산 포트폴리오 요약</h3>
-    <div class="dashboard-row">
-      <div class="row align-items-center g-4">
-        <div class="col-sm-5 text-center">
-          <div class="chart-box">
-            <canvas id="assetDonutChart" width="200" height="200"></canvas>
-          </div>
-        </div>
-        <div class="col-sm-7">
-          <div class="summary-list" id="summaryContainer">
-            <div class="text-muted small p-2">데이터를 분석하는 중입니다...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">상세 자산 내역</h3>
-    <div class="table-container">
-      <div class="table-responsive">
-        <table class="table align-middle" id="assetTable">
-          <thead>
-            <tr>
-              <th>자산명</th>
-              <th>구분</th>
-              <th class="text-end">금액</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr>
-              <td colspan="3" class="text-center text-muted py-5">
-                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                자산 정보를 파싱하고 있습니다...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const ASSET_COLUMN_INDEX = 0;    
-    const CATEGORY_COLUMN_INDEX = 1; 
-    const JUNE_COLUMN_INDEX = 2;     
-
-    let myChart = null; 
-
-    function getCellString(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return '';
-      return cell.v.toString().trim();
-    }
-
-    function parseToNumber(cell) {
-      const strVal = getCellString(cell).replace(/[^0-9.-]/g, ''); 
-      if (strVal === '') return 0;
-      const num = Number(strVal);
-      return isNaN(num) ? 0 : num;
-    }
-
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' 원';
-    }
-
-    async function loadData() {
-      try {
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
-        const response = await fetch(url);
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table?.rows || [];
-
-        if (rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 비어 있습니다.</td></tr>`;
-          return;
-        }
-
-        const targetCategories = ['투자', '예금', '보험', '연금'];
-        const summaryMap = { '투자': 0, '예금': 0, '보험': 0, '연금': 0 };
-        let otherTotal = 0;
-        let grandTotal = 0; 
-
-        let bodyHTML = '';
-
-        for (let i = 0; i < rows.length; i++) {
-          if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
-          const cells = rows[i].c;
-
-          const cellAsset = cells[ASSET_COLUMN_INDEX];
-          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
-          const cellJune = cells[JUNE_COLUMN_INDEX];
-
-          const assetVal = getCellString(cellAsset);
-          const categoryVal = getCellString(cellCategory);
-
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
-            continue; 
-          }
-
-          const juneNum = parseToNumber(cellJune);
-          grandTotal += juneNum; 
-
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] = (summaryMap[categoryVal] || 0) + juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
-
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          const totalVal = summaryMap[category] || 0;
-          const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
-          summaryHTML += `
-            <div class="mini-bar-item border-${category}">
-              <span class="title">${category} <small class="text-muted ms-1">${percentage}%</small></span>
-              <span class="amount">${totalVal.toLocaleString('ko-KR')} 원</span>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
-          summaryHTML += `
-            <div class="mini-bar-item border-기타">
-              <span class="title">기타 자산 <small class="text-muted ms-1">${otherPercentage}%</small></span>
-              <span class="amount">${otherTotal.toLocaleString('ko-KR')} 원</span>
-            </div>
-          `;
-        }
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-        // 💡 [치명적 버그 원인 완전 해결] 
-        // 전역등록 대신 Chart 객체 생성 시 plugins 옵션에 직접 로컬 주입하여 충돌 및 로딩 속도 이슈 완벽 봉쇄
-        try {
-          const chartCanvas = document.getElementById('assetDonutChart');
-          if (chartCanvas && typeof Chart !== 'undefined') {
-            
-            const chartLabels = [...targetCategories];
-            const chartData = [summaryMap['투자'], summaryMap['예금'], summaryMap['보험'], summaryMap['연금']];
-            const chartColors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
-
-            if (otherTotal > 0) {
-              chartLabels.push('기타 자산');
-              chartData.push(otherTotal);
-              chartColors.push('#6b7280');
-            }
-
-            const ctx = chartCanvas.getContext('2d');
-            if (myChart) myChart.destroy(); 
-
-            myChart = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: chartLabels,
-                datasets: [{
-                  data: chartData,
-                  backgroundColor: chartColors,
-                  borderWidth: 0,
-                  hoverOffset: 4
-                }]
-              },
-              // 💡 전역 Chart.register 대신 여기에 컴포넌트 단위로 직접 주입합니다. (안전율 100%)
-              plugins: [typeof ChartDataLabels !== 'undefined' ? ChartDataLabels : {}],
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                  legend: { display: false },
-                  datalabels: {
-                    color: '#ffffff',
-                    font: { weight: 'bold', size: 11, family: 'Pretendard' },
-                    formatter: (value) => {
-                      if (grandTotal === 0) return "";
-                      let percentage = (value * 100 / grandTotal).toFixed(1);
-                      return percentage > 5 ? percentage + "%" : ""; 
-                    }
-                  }
-                },
-                cutout: '70%'
-              }
-            });
-          }
-        } catch (chartError) {
-          console.error("차트 생성 중 오류:", chartError);
-        }
-
-      } catch (error) {
-        console.error("전체 스크립트 에러 수집:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 대시보드 로드 에러: ${error.message}</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+    /* 📊 업비트 거래소 시그니처 테마 컬러 매칭 (투자=강렬한 상승 레드, 예금=안정적인 블루) */
+    .border-투자 { border-left-color: #e15241; } /* 업비트 상승 레드 */
+    .border-예금 { border-left-color: #418df1; } /*
