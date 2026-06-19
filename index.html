@@ -244,4 +244,112 @@
 
         for (let i = 0; i < rows.length; i++) {
           if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
-          const cells =
+          const cells = rows[i].c;
+
+          const cellAsset = cells[ASSET_COLUMN_INDEX];
+          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
+          const cellJune = cells[JUNE_COLUMN_INDEX];
+
+          const assetVal = (cellAsset && cellAsset.v !== null) ? cellAsset.v.toString().trim() : '';
+          const categoryVal = (cellCategory && cellCategory.v !== null) ? cellCategory.v.toString().trim() : '';
+
+          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
+            continue; 
+          }
+
+          const juneNum = parseToNumber(cellJune);
+          grandTotal += juneNum; 
+
+          if (targetCategories.includes(categoryVal)) {
+            summaryMap[categoryVal] = (summaryMap[categoryVal] || 0) + juneNum;
+          } else if (categoryVal !== '') {
+            otherTotal += juneNum;
+          }
+
+          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
+
+          bodyHTML += '<tr>';
+          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
+          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
+          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
+          bodyHTML += '</tr>';
+        }
+        
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
+        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
+
+        let summaryHTML = '';
+        targetCategories.forEach(category => {
+          const totalVal = summaryMap[category] || 0;
+          summaryHTML += `
+            <div class="mini-bar-item border-${category}">
+              <span class="title">${category}</span>
+              <span class="amount">${totalVal.toLocaleString('ko-KR')} 원</span>
+            </div>
+          `;
+        });
+
+        if (otherTotal > 0) {
+          summaryHTML += `
+            <div class="mini-bar-item border-기타">
+              <span class="title">기타 자산</span>
+              <span class="amount">${otherTotal.toLocaleString('ko-KR')} 원</span>
+            </div>
+          `;
+        }
+        document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+        // 💡 [독립 실행 분리 버그 해결] 차트 렌더링을 완전히 분리된 try-catch 블록으로 묶음
+        // 차트를 그리다가 에러가 나거나 캔버스를 못 찾아도 테이블과 합계는 정상 표기됩니다.
+        try {
+          const chartCanvas = document.getElementById('assetDonutChart');
+          if (chartCanvas) {
+            const chartLabels = [...targetCategories];
+            const chartData = [summaryMap['투자'], summaryMap['예금'], summaryMap['보험'], summaryMap['연금']];
+            const chartColors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
+
+            if (otherTotal > 0) {
+              chartLabels.push('기타 자산');
+              chartData.push(otherTotal);
+              chartColors.push('#6b7280');
+            }
+
+            const ctx = chartCanvas.getContext('2d');
+            if (myChart) myChart.destroy(); 
+
+            myChart = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                labels: chartLabels,
+                datasets: [{
+                  data: chartData,
+                  backgroundColor: chartColors,
+                  borderWidth: 0,
+                  hoverOffset: 4
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                  legend: { display: false }
+                },
+                cutout: '75%'
+              }
+            });
+          }
+        } catch (chartError) {
+          console.error("차트 생성 중 오류:", chartError);
+        }
+
+      } catch (error) {
+        console.error("오류 발생 원인:", error);
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 시스템 에러 발생: ${error.message}</td></tr>`;
+      }
+    }
+
+    // 문서가 완전히 생성된 후 연동 실행 처리
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
