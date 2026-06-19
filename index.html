@@ -9,256 +9,47 @@
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #f8fafc;
-      color: #334155;
-      padding-top: 3rem;
+      background-color: #f3f4f6; /* 약간 더 차분한 그레이 배경 */
+      color: #1f2937;
+      padding-top: 2rem;
       padding-bottom: 3rem;
     }
     .container {
-      max-width: 1140px;
+      max-width: 800px; /* 모바일/태블릿 가독성을 위해 슬림하게 조정 */
     }
+    
+    /* 🏆 전체 총합계 메인 배너 스타일 (핀테크 앱 스타일) */
+    .main-total-banner {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
+      border-radius: 24px;
+      padding: 2rem 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
+      margin-bottom: 2rem;
+    }
+
+    /* 📱 모바일용 가로 스크롤 컨테이너 (옆으로 넘겨보는 카드) */
+    .scroll-container {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+      margin-left: -1rem;  /* 모바일 화면 꽉 차게 스크롤 되도록 여백 조정 */
+      margin-right: -1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .scroll-container::-webkit-scrollbar {
+      display: none; /* 스크롤바 숨기기 (깔끔하게) */
+    }
+    
     .card-summary {
+      flex: 0 0 160px; /* 모바일에서 한눈에 여러 개가 걸치도록 너비 고정 */
+      scroll-snap-align: start;
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-      transition: all 0.25s ease;
-      height: 100%;
-    }
-    .card-summary:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-    }
-    .table-container {
-      background-color: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-      padding: 1.5rem;
-      margin-top: 1.5rem;
-    }
-    .table th {
-      font-weight: 600;
-      color: #64748b;
-      background-color: #f8fafc !important;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 1rem 0.75rem;
-    }
-    .table td {
-      padding: 1rem 0.75rem;
-      border-bottom: 1px solid #f1f5f9;
-      color: #0f172a;
-    }
-    .badge-asset {
-      font-weight: 500;
-      padding: 0.35rem 0.65rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
-    }
-    .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
-    .badge-예금 { background-color: #ecfdf5; color: #047857; }
-    .badge-연금 { background-color: #fffbeb; color: #b45309; }
-    .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
-    .badge-기타 { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
-
-    .accent-총합계 { border-top: 4px solid #0f172a; background: #f8fafc; }
-    .accent-보험 { border-top: 4px solid #3b82f6; }
-    .accent-예금 { border-top: 4px solid #10b981; }
-    .accent-연금 { border-top: 4px solid #f59e0b; }
-    .accent-투자 { border-top: 4px solid #ef4444; }
-    .accent-기타 { border-top: 4px solid #64748b; }
-  </style>
-</head>
-<body>
-
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-5">
-      <div>
-        <h1 class="h3 fw-bold text-dark m-0">My 자산 현황</h1>
-        <p class="text-muted small m-0 mt-1">구글 스프레드시트 실시간 대시보드</p>
-      </div>
-      <span class="badge bg-dark px-3 py-2 rounded-pill fs-7">Live Sync</span>
-    </div>
-
-    <h3 class="fs-6 fw-bold text-secondary mb-3">자산 분류별 6월 합계</h3>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3 mb-5" id="summaryContainer">
-      <div class="col-12 text-muted">자산을 계산하는 중입니다...</div>
-    </div>
-
-    <h3 class="fs-6 fw-bold text-secondary mb-3">상세 자산 내역</h3>
-    <div class="table-container">
-      <div class="table-responsive">
-        <table class="table align-middle" id="assetTable">
-          <thead>
-            <tr>
-              <th style="width: 45%;">자산명</th>
-              <th style="width: 25%;">구분</th>
-              <th style="width: 30%;" class="text-end">6월 금액</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr>
-              <td colspan="3" class="text-center text-muted py-5">
-                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                네트워크 연결 및 자산 데이터를 불러오는 중...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const ASSET_COLUMN_INDEX = 0;    
-    const CATEGORY_COLUMN_INDEX = 1; 
-    const JUNE_COLUMN_INDEX = 2;     
-
-    function parseToNumber(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return 0;
-      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
-      const num = Number(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' 원';
-    }
-
-    // 💡 네트워크 타임아웃(제한시간 5초) 설정을 위한 헬퍼 함수
-    async function fetchWithTimeout(resource, options = {}) {
-      const { timeout = 5000 } = options;
-      
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(resource, {
-        ...options,
-        signal: controller.signal
-      });
-      clearTimeout(id);
-      
-      return response;
-    }
-
-    async function loadData() {
-      try {
-        // 💡 [해결책] 캐시 버스팅 적용 (?_=[타임스탬프])로 매번 신선한 데이터 강제 갱신
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
-        
-        // 5초 안에 응답 없으면 타임아웃 에러 처리
-        const response = await fetchWithTimeout(url, { timeout: 5000 });
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
-
-        if (!rows || rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
-          return;
-        }
-
-        let assetIdx = 0, categoryIdx = 1, juneIdx = 2; 
-        
-        if (json.table.cols && json.table.cols.length > 0) {
-          json.table.cols.forEach((col, idx) => {
-            const label = col.label ? col.label.trim() : '';
-            if (label.includes('자산')) assetIdx = idx;
-            if (label.includes('구분')) categoryIdx = idx;
-            if (label.includes('6월')) juneIdx = idx;
-          });
-        }
-
-        const targetCategories = ['보험', '예금', '연금', '투자'];
-        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
-        let otherTotal = 0;
-        let grandTotal = 0; 
-
-        let bodyHTML = '';
-
-        for (let i = 0; i < rows.length; i++) {
-          const cells = rows[i].c;
-          if (!cells) continue;
-
-          const cellAsset = cells[assetIdx];
-          const cellCategory = cells[categoryIdx];
-          const cellJune = cells[juneIdx];
-
-          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
-          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
-
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || assetVal === '' && categoryVal === '') {
-            continue; 
-          }
-
-          const juneNum = parseToNumber(cellJune);
-          grandTotal += juneNum; 
-
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] += juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-
-        let summaryHTML = `
-          <div class="col">
-            <div class="card-summary accent-총합계">
-              <div class="text-dark small fw-bold">📈 전체 총합계</div>
-              <div class="fs-4 mb-0 fw-bold text-primary mt-2">${grandTotal.toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
-            </div>
-          </div>
-        `;
-
-        targetCategories.forEach(category => {
-          summaryHTML += `
-            <div class="col">
-              <div class="card-summary accent-${category}">
-                <div class="text-muted small fw-medium">${category}</div>
-                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${summaryMap[category].toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
-              </div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="col">
-              <div class="card-summary accent-기타">
-                <div class="text-muted small fw-medium">기타 자산</div>
-                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${otherTotal.toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
-              </div>
-            </div>
-          `;
-        }
-
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-      } catch (error) {
-        console.error("오류 발생:", error);
-        if (error.name === 'AbortError') {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-warning py-5">구글 시트 응답 시간이 초과되었습니다. 새로고침(F5)을 해주세요.</td></tr>`;
-        } else {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패 (네트워크 연결 혹은 공유 설정을 확인하세요).</td></tr>`;
-        }
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 1.25rem 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0
