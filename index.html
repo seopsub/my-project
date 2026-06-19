@@ -4,21 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자산관리 Dashboard</title>
+  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #f3f4f6; /* 약간 더 차분한 그레이 배경 */
+      background-color: #f3f4f6;
       color: #1f2937;
       padding-top: 2rem;
       padding-bottom: 3rem;
     }
     .container {
-      max-width: 800px; /* 모바일/태블릿 가독성을 위해 슬림하게 조정 */
+      max-width: 800px;
     }
     
-    /* 🏆 전체 총합계 메인 배너 스타일 (핀테크 앱 스타일) */
+    /* 전체 총합계 메인 배너 */
     .main-total-banner {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
@@ -28,28 +30,228 @@
       margin-bottom: 2rem;
     }
 
-    /* 📱 모바일용 가로 스크롤 컨테이너 (옆으로 넘겨보는 카드) */
+    /* 가로 스크롤 컨테이너 (PC에서는 자연스러운 그리드로 보이고, 모바일선 스크롤) */
     .scroll-container {
       display: flex;
       gap: 1rem;
       overflow-x: auto;
       padding-bottom: 1rem;
-      margin-left: -1rem;  /* 모바일 화면 꽉 차게 스크롤 되도록 여백 조정 */
-      margin-right: -1rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
     }
+    /* PC 환경을 위해 브라우저 기본 스크롤바 스타일 살짝 지정 */
     .scroll-container::-webkit-scrollbar {
-      display: none; /* 스크롤바 숨기기 (깔끔하게) */
+      height: 6px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
     }
     
     .card-summary {
-      flex: 0 0 160px; /* 모바일에서 한눈에 여러 개가 걸치도록 너비 고정 */
-      scroll-snap-align: start;
+      flex: 0 0 160px;
       background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 18px;
       padding: 1.25rem 1rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    /* 테이블 스타일 */
+    .table-container {
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .table th {
+      font-weight: 600;
+      color: #6b7280;
+      background-color: #f9fafb !important;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.85rem 0.5rem;
+      font-size: 0.9rem;
+    }
+    .table td {
+      padding: 1rem 0.5rem;
+      border-bottom: 1px solid #f3f4f6;
+      color: #111827;
+      font-size: 0.95rem;
+    }
+
+    /* 파스텔 배지 */
+    .badge-asset {
+      font-weight: 500;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+    .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
+    .badge-예금 { background-color: #ecfdf5; color: #047857; }
+    .badge-연금 { background-color: #fffbeb; color: #b45309; }
+    .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
+    .badge-기타 { background-color: #f3f4f6; color: #4b5563; }
+
+    .accent-보험 { border-top: 4px solid #3b82f6; }
+    .accent-예금 { border-top: 4px solid #10b981; }
+    .accent-연금 { border-top: 4px solid #f59e0b; }
+    .accent-투자 { border-top: 4px solid #ef4444; }
+    .accent-기타 { border-top: 4px solid #6b7280; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- 🏆 1. 전체 총합계 배너 -->
+    <div class="main-total-banner text-center">
+      <div class="opacity-75 small fw-medium text-uppercase tracking-wider">나의 자산 총합계 (6월)</div>
+      <div class="display-5 fw-bold my-2" id="grandTotalDisplay">0<span class="fs-4 fw-normal opacity-75 ms-1">원</span></div>
+      <span class="badge bg-white bg-opacity-20 rounded-pill small" style="font-size: 0.75rem;">Live Syncing...</span>
+    </div>
+
+    <!-- 📊 2. 자산 항목별 카드 -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h3 class="fs-6 fw-bold text-secondary m-0">항목별 요약</h3>
+    </div>
+    <div class="scroll-container mb-4" id="summaryContainer">
+      <div class="text-muted small p-2">계산 중...</div>
+    </div>
+
+    <!-- 🔍 3. 상세 내역 테이블 -->
+    <h3 class="fs-6 fw-bold text-secondary mb-2">상세 자산 내역</h3>
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table align-middle" id="assetTable">
+          <thead>
+            <tr>
+              <th style="width: 45%;">자산명</th>
+              <th style="width: 25%;">구분</th>
+              <th style="width: 30%;" class="text-end">금액</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="3" class="text-center text-muted py-5">
+                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                불러오는 중...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 💡 [버그 해결] 추적 인덱스를 확실하게 하드코딩으로 고정하여 PC 환경 에러 차단
+    const ASSET_COLUMN_INDEX = 0;    // A열: 자산명
+    const CATEGORY_COLUMN_INDEX = 1; // B열: 구분
+    const JUNE_COLUMN_INDEX = 2;     // C열: 6월 금액
+
+    function parseToNumber(cell) {
+      if (!cell || cell.v === null || cell.v === undefined) return 0;
+      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
+      const num = Number(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function formatCurrency(cell) {
+      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
+      if (cell.f) return cell.f + ' 원';
+      const num = parseToNumber(cell);
+      return num.toLocaleString('ko-KR') + ' 원';
+    }
+
+    async function loadData() {
+      try {
+        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
+        const response = await fetch(url);
+        const text = await response.text();
+        
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows;
+
+        if (!rows || rows.length === 0) {
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
+          return;
+        }
+
+        const targetCategories = ['보험', '예금', '연금', '투자'];
+        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
+        let otherTotal = 0;
+        let grandTotal = 0; 
+
+        let bodyHTML = '';
+
+        for (let i = 0; i < rows.length; i++) {
+          const cells = rows[i].c;
+          if (!cells) continue;
+
+          // 고정된 인덱스로 안전하게 접근
+          const cellAsset = cells[ASSET_COLUMN_INDEX];
+          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
+          const cellJune = cells[JUNE_COLUMN_INDEX];
+
+          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
+          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
+
+          // 첫 줄 글자 헤더나 '계'가 들어간 행 필터링
+          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
+            continue; 
+          }
+
+          const juneNum = parseToNumber(cellJune);
+          grandTotal += juneNum; 
+
+          if (targetCategories.includes(categoryVal)) {
+            summaryMap[categoryVal] += juneNum;
+          } else if (categoryVal !== '') {
+            otherTotal += juneNum;
+          }
+
+          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
+
+          bodyHTML += '<tr>';
+          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
+          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
+          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
+          bodyHTML += '</tr>';
+        }
+        
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
+
+        // 상단 배너 업데이트
+        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal opacity-75 ms-1">원</span>`;
+
+        // 하위 카드 빌드
+        let summaryHTML = '';
+        targetCategories.forEach(category => {
+          summaryHTML += `
+            <div class="card-summary accent-${category}">
+              <div class="text-muted small fw-medium">${category}</div>
+              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')}원</div>
+            </div>
+          `;
+        });
+
+        if (otherTotal > 0) {
+          summaryHTML += `
+            <div class="card-summary accent-기타">
+              <div class="text-muted small fw-medium">기타 자산</div>
+              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')}원</div>
+            </div>
+          `;
+        }
+
+        document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+      } catch (error) {
+        console.error("오류 발생:", error);
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패 (PC 브라우저 콘솔을 확인하세요)</td></tr>`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
