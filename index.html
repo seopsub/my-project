@@ -15,7 +15,7 @@
       padding-bottom: 3rem;
     }
     .container {
-      max-width: 1140px; /* 전체 합계 추가로 가로 폭을 살짝 넓힘 */
+      max-width: 1140px;
     }
     .card-summary {
       background: #ffffff;
@@ -62,8 +62,7 @@
     .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
     .badge-기타 { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
 
-    /* 대시보드 상단 포인트 라인 스타일 */
-    .accent-총합계 { border-top: 4px solid #0f172a; background: #f8fafc; } /* 총합계는 차분하고 묵직한 톤 */
+    .accent-총합계 { border-top: 4px solid #0f172a; background: #f8fafc; }
     .accent-보험 { border-top: 4px solid #3b82f6; }
     .accent-예금 { border-top: 4px solid #10b981; }
     .accent-연금 { border-top: 4px solid #f59e0b; }
@@ -102,7 +101,7 @@
             <tr>
               <td colspan="3" class="text-center text-muted py-5">
                 <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                로딩 중...
+                네트워크 연결 및 자산 데이터를 불러오는 중...
               </td>
             </tr>
           </tbody>
@@ -117,4 +116,149 @@
     const JUNE_COLUMN_INDEX = 2;     
 
     function parseToNumber(cell) {
-      if (!cell ||
+      if (!cell || cell.v === null || cell.v === undefined) return 0;
+      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
+      const num = Number(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function formatCurrency(cell) {
+      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
+      if (cell.f) return cell.f + ' 원';
+      const num = parseToNumber(cell);
+      return num.toLocaleString('ko-KR') + ' 원';
+    }
+
+    // 💡 네트워크 타임아웃(제한시간 5초) 설정을 위한 헬퍼 함수
+    async function fetchWithTimeout(resource, options = {}) {
+      const { timeout = 5000 } = options;
+      
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(resource, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      
+      return response;
+    }
+
+    async function loadData() {
+      try {
+        // 💡 [해결책] 캐시 버스팅 적용 (?_=[타임스탬프])로 매번 신선한 데이터 강제 갱신
+        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
+        
+        // 5초 안에 응답 없으면 타임아웃 에러 처리
+        const response = await fetchWithTimeout(url, { timeout: 5000 });
+        const text = await response.text();
+        
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows;
+
+        if (!rows || rows.length === 0) {
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
+          return;
+        }
+
+        let assetIdx = 0, categoryIdx = 1, juneIdx = 2; 
+        
+        if (json.table.cols && json.table.cols.length > 0) {
+          json.table.cols.forEach((col, idx) => {
+            const label = col.label ? col.label.trim() : '';
+            if (label.includes('자산')) assetIdx = idx;
+            if (label.includes('구분')) categoryIdx = idx;
+            if (label.includes('6월')) juneIdx = idx;
+          });
+        }
+
+        const targetCategories = ['보험', '예금', '연금', '투자'];
+        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
+        let otherTotal = 0;
+        let grandTotal = 0; 
+
+        let bodyHTML = '';
+
+        for (let i = 0; i < rows.length; i++) {
+          const cells = rows[i].c;
+          if (!cells) continue;
+
+          const cellAsset = cells[assetIdx];
+          const cellCategory = cells[categoryIdx];
+          const cellJune = cells[juneIdx];
+
+          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
+          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
+
+          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || assetVal === '' && categoryVal === '') {
+            continue; 
+          }
+
+          const juneNum = parseToNumber(cellJune);
+          grandTotal += juneNum; 
+
+          if (targetCategories.includes(categoryVal)) {
+            summaryMap[categoryVal] += juneNum;
+          } else if (categoryVal !== '') {
+            otherTotal += juneNum;
+          }
+
+          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
+
+          bodyHTML += '<tr>';
+          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
+          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
+          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
+          bodyHTML += '</tr>';
+        }
+        
+        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
+
+        let summaryHTML = `
+          <div class="col">
+            <div class="card-summary accent-총합계">
+              <div class="text-dark small fw-bold">📈 전체 총합계</div>
+              <div class="fs-4 mb-0 fw-bold text-primary mt-2">${grandTotal.toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
+            </div>
+          </div>
+        `;
+
+        targetCategories.forEach(category => {
+          summaryHTML += `
+            <div class="col">
+              <div class="card-summary accent-${category}">
+                <div class="text-muted small fw-medium">${category}</div>
+                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${summaryMap[category].toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
+              </div>
+            </div>
+          `;
+        });
+
+        if (otherTotal > 0) {
+          summaryHTML += `
+            <div class="col">
+              <div class="card-summary accent-기타">
+                <div class="text-muted small fw-medium">기타 자산</div>
+                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${otherTotal.toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+      } catch (error) {
+        console.error("오류 발생:", error);
+        if (error.name === 'AbortError') {
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-warning py-5">구글 시트 응답 시간이 초과되었습니다. 새로고침(F5)을 해주세요.</td></tr>`;
+        } else {
+          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패 (네트워크 연결 혹은 공유 설정을 확인하세요).</td></tr>`;
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
