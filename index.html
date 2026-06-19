@@ -107,3 +107,233 @@
       <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
       
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
+      
+      <div class="build-version">BUILD v1.1.0</div>
+    </div>
+  </div>
+
+  <div class="container d-none" id="mainDashboard">
+    
+    <div class="main-nav-tabs" id="mainNavTabs">
+      <button class="nav-tab-btn active" onclick="switchMainTab('sheet1')">MY ASSET</button>
+      <button class="nav-tab-btn" onclick="switchMainTab('sheet2')">OUR ASSET</button>
+    </div>
+
+    <div class="main-total-banner">
+      <div class="row align-items-center">
+        <div class="col-7 col-sm-8 text-start">
+          <div class="small fw-medium mb-1" id="totalBannerTitle" style="color: #9aa5b5 !important;">총 보유자산</div>
+          <div class="h2 fw-bold my-1 tracking-tight" id="grandTotalDisplay" style="font-size: 2.2rem; color: #e15241 !important;">0 KRW</div>
+        </div>
+        <div class="col-5 col-sm-4 text-end">
+          <div class="sync-status">
+            <span class="sync-dot"></span>
+            <span>LIVE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title mb-2">📊 보유 자산별 요약</div>
+    <div class="summary-grid" id="summaryContainer"></div>
+
+    <div class="filter-sort-row">
+      <div class="section-title">🔍 자산별 상세 보유내역</div>
+      <div class="filter-tabs" id="subFilterTabs"></div>
+      <div>
+        <select class="form-select sort-select" id="sortSelect" onchange="sortData()">
+          <option value="default">기본 순 정렬</option>
+          <option value="high">보유금액 높은 순</option>
+          <option value="low">보유금액 낮은 순</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>자산명</th>
+              <th>구분</th>
+              <th class="text-end">보유금액(KRW)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycby1-ba2LYYB_ZZLkHMhRgNJ71k-xWmiHUCFzTxyg4qdJdFdqo1XAqw_SYfSFCfTnEwQ/exec";
+
+    let rawServerData = null; 
+    let currentTabKey = 'sheet1'; 
+    let currentAssetList = []; 
+    let currentCategoryFilter = '전체';
+
+    async function verifyPassword() {
+      const password = document.getElementById("passwordInput").value;
+      const errorDiv = document.getElementById("lockError");
+      
+      if (password === "1235") {
+        // 🛠️ [디버깅 타겟 치료] 치명적인 문법 오타였던 errorDiv.add 문장을 깔끔하게 도려냄!
+        errorDiv.classList.add('d-none');
+        document.getElementById("lockScreen").classList.add('d-none');
+        document.getElementById("mainDashboard").classList.remove('d-none');
+        await loadServerData();
+      } else {
+        errorDiv.classList.remove('d-none');
+      }
+    }
+
+    function parseToNumber(val) {
+      if(val === null || val === undefined) return 0;
+      const strVal = val.toString().replace(/[^0-9.-]/g, ''); 
+      if (strVal === '') return 0;
+      const num = Number(strVal);
+      return isNaN(num) ? 0 : num;
+    }
+
+    async function loadServerData() {
+      try {
+        const response = await fetch(MY_SECRET_URL + "?_=" + new Date().getTime());
+        rawServerData = await response.json();
+        switchMainTab('sheet1');
+      } catch (error) {
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 데이터 동기화 실패 또는 연동 오류</td></tr>`;
+      }
+    }
+
+    function switchMainTab(tabKey) {
+      currentTabKey = tabKey;
+      currentCategoryFilter = '전체';
+      
+      const tabs = document.querySelectorAll('#mainNavTabs .nav-tab-btn');
+      tabs[tabKey === 'sheet1' ? 0 : 1].classList.add('active');
+      tabs[tabKey === 'sheet1' ? 1 : 0].classList.remove('active');
+
+      document.getElementById("totalBannerTitle").innerText = tabKey === 'sheet1' ? "나의 총 보유자산" : "공동 및 배우자 총 자산";
+
+      processAndRenderData();
+    }
+
+    function processAndRenderData() {
+      if (!rawServerData || !rawServerData[currentTabKey]) return;
+      
+      const rows = rawServerData[currentTabKey].table?.rows || [];
+      currentAssetList = [];
+
+      const targetCategories = ['유동자산', '비유동자산'];
+      const summaryMap = { '유동자산': 0, '비유동자산': 0 };
+      let otherTotal = 0;
+      let grandTotal = 0;
+
+      const uniqueCategories = new Set();
+
+      for (let i = 0; i < rows.length; i++) {
+        if (!rows[i] || !rows[i].c) continue;
+        const cells = rows[i].c;
+
+        const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
+        const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
+        const amountNum = parseToNumber(cells[2]?.v);
+
+        if (
+          assetVal === '자산' || categoryVal === '구분' || assetVal === '' || 
+          assetVal.includes('계') || categoryVal.includes('계')
+        ) {
+          continue; 
+        }
+
+        grandTotal += amountNum;
+        if (categoryVal !== '') uniqueCategories.add(categoryVal);
+
+        if (targetCategories.includes(categoryVal)) {
+          summaryMap[categoryVal] += amountNum;
+        } else {
+          otherTotal += amountNum;
+        }
+
+        currentAssetList.push({
+          asset: assetVal,
+          category: categoryVal !== '' ? categoryVal : '기타',
+          amount: amountNum,
+          formattedAmount: amountNum.toLocaleString('ko-KR') + ' KRW'
+        });
+      }
+
+      document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
+
+      let summaryHTML = '';
+      targetCategories.forEach(category => {
+        const totalVal = summaryMap[category] || 0;
+        const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
+        summaryHTML += `
+          <div class="grid-item accent-${category}">
+            <div class="title">${category}</div>
+            <div class="amount">${totalVal.toLocaleString('ko-KR')}<span class="percent">${percentage}%</span></div>
+          </div>
+        `;
+      });
+
+      if (otherTotal > 0) {
+        const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
+        summaryHTML += `
+          <div class="grid-item accent-기타자산">
+            <div class="title">기타 자산</div>
+            <div class="amount">${otherTotal.toLocaleString('ko-KR')}<span class="percent">${otherPercentage}%</span></div>
+          </div>
+        `;
+      }
+      document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+      let filterHTML = `<button class="filter-btn active" onclick="filterCategory('전체')">전체</button>`;
+      uniqueCategories.forEach(cat => {
+        filterHTML += `<button class="filter-btn" onclick="filterCategory('${cat}')">${cat}</button>`;
+      });
+      document.getElementById("subFilterTabs").innerHTML = filterHTML;
+
+      renderTable();
+    }
+
+    function renderTable() {
+      let filteredList = currentAssetList;
+      if (currentCategoryFilter !== '전체') {
+        filteredList = currentAssetList.filter(item => item.category === currentCategoryFilter);
+      }
+
+      const sortType = document.getElementById("sortSelect").value;
+      if (sortType === 'high') filteredList.sort((a, b) => b.amount - a.amount);
+      else if (sortType === 'low') filteredList.sort((a, b) => a.amount - b.amount);
+
+      let bodyHTML = '';
+      filteredList.forEach(item => {
+        const coreCategories = ['유동자산', '비유동자산'];
+        const badgeClass = coreCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
+
+        bodyHTML += '<tr>';
+        bodyHTML += `<td class="fw-semibold text-white text-wrap" style="white-space: normal; min-width: 120px;">${item.asset}</td>`; 
+        bodyHTML += `<td><span class="badge-asset ${badgeClass}">${item.category}</span></td>`;
+        bodyHTML += `<td class="text-end fw-bold text-white">${item.formattedAmount}</td>`;
+        bodyHTML += '</tr>';
+      });
+
+      document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4" style="color:#9aa5b5;">내역이 없습니다.</td></tr>`;
+    }
+
+    function filterCategory(category) {
+      currentCategoryFilter = category;
+      const buttons = document.querySelectorAll('#subFilterTabs .filter-btn');
+      buttons.forEach(btn => {
+        if (btn.innerText === category) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      renderTable();
+    }
+
+    function sortData() { renderTable(); }
+  </script>
+</body>
+</html>
