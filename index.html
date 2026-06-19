@@ -15,7 +15,7 @@
       padding-bottom: 3rem;
     }
     .container {
-      max-width: 960px;
+      max-width: 1140px; /* 전체 합계 추가로 가로 폭을 살짝 넓힘 */
     }
     .card-summary {
       background: #ffffff;
@@ -24,6 +24,7 @@
       padding: 1.5rem;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
       transition: all 0.25s ease;
+      height: 100%;
     }
     .card-summary:hover {
       transform: translateY(-4px);
@@ -61,10 +62,13 @@
     .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
     .badge-기타 { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
 
+    /* 대시보드 상단 포인트 라인 스타일 */
+    .accent-총합계 { border-top: 4px solid #0f172a; background: #f8fafc; } /* 총합계는 차분하고 묵직한 톤 */
     .accent-보험 { border-top: 4px solid #3b82f6; }
     .accent-예금 { border-top: 4px solid #10b981; }
     .accent-연금 { border-top: 4px solid #f59e0b; }
     .accent-투자 { border-top: 4px solid #ef4444; }
+    .accent-기타 { border-top: 4px solid #64748b; }
   </style>
 </head>
 <body>
@@ -79,7 +83,7 @@
     </div>
 
     <h3 class="fs-6 fw-bold text-secondary mb-3">자산 분류별 6월 합계</h3>
-    <div class="row g-3 mb-5" id="summaryContainer">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3 mb-5" id="summaryContainer">
       <div class="col-12 text-muted">자산을 계산하는 중입니다...</div>
     </div>
 
@@ -108,127 +112,9 @@
   </div>
 
   <script>
-    // 어떤 문자 형태든 숫자로만 안전하게 정제하는 함수
+    const ASSET_COLUMN_INDEX = 0;    
+    const CATEGORY_COLUMN_INDEX = 1; 
+    const JUNE_COLUMN_INDEX = 2;     
+
     function parseToNumber(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return 0;
-      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
-      const num = Number(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    // 숫자에 쉼표(,)를 추가하는 함수
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' 원';
-    }
-
-    async function loadData() {
-      try {
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json";
-        const response = await fetch(url);
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
-
-        if (!rows || rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
-          return;
-        }
-
-        // 💡 [핵심 버그 수정] 특정 인덱스를 강제하지 않고, 구글 시트에서 열 이름에 맞춰 동적으로 찾아내도록 안전망 구축
-        let assetIdx = 0, categoryIdx = 1, juneIdx = 2; // 기본값 세팅
-        
-        // 구글 시트가 컬럼 정보를 따로 들고 있다면 매핑 시도
-        if (json.table.cols && json.table.cols.length > 0) {
-          json.table.cols.forEach((col, idx) => {
-            const label = col.label ? col.label.trim() : '';
-            if (label.includes('자산')) assetIdx = idx;
-            if (label.includes('구분')) categoryIdx = idx;
-            if (label.includes('6월')) juneIdx = idx;
-          });
-        }
-
-        const targetCategories = ['보험', '예금', '연금', '투자'];
-        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
-        let otherTotal = 0;
-
-        let bodyHTML = '';
-
-        for (let i = 0; i < rows.length; i++) {
-          const cells = rows[i].c;
-          if (!cells) continue;
-
-          // 데이터가 인덱스 범위 안에 존재하는지 매번 검사 (에러 방어)
-          const cellAsset = cells[assetIdx];
-          const cellCategory = cells[categoryIdx];
-          const cellJune = cells[juneIdx];
-
-          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
-          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
-
-          // 1. 헤더행('자산', '구분')이나 '계', '합계'가 포함된 행은 화면 및 합산에서 스킵
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || assetVal === '' && categoryVal === '') {
-            continue; 
-          }
-
-          const juneNum = parseToNumber(cellJune);
-
-          // 2. 항목별 매핑 및 누적 합산
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] += juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          // 3. 상세 테이블 HTML 누적
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark">${assetVal || '-'}</td>`;
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        // 데이터 화면 렌더링
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-
-        // 4. 대시보드 카드 생성
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          summaryHTML += `
-            <div class="col-md-3 col-sm-6">
-              <div class="card-summary accent-${category}">
-                <div class="text-muted small fw-medium">${category}</div>
-                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${summaryMap[category].toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
-              </div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="col-md-3 col-sm-6">
-              <div class="card-summary accent-기타">
-                <div class="text-muted small fw-medium">기타 자산</div>
-                <div class="fs-4 mb-0 fw-bold text-dark mt-2">${otherTotal.toLocaleString('ko-KR')}<span class="fs-6 fw-normal text-secondary ms-1">원</span></div>
-              </div>
-            </div>
-          `;
-        }
-
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-      } catch (error) {
-        console.error("오류 발생:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 중 시스템 오류가 발생했습니다. 구글 시트의 공유 및 데이터 형식을 점검해 주세요.</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+      if (!cell ||
