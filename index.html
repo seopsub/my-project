@@ -26,6 +26,7 @@
       background-color: #0b162c; border: 1px solid #1a2e56; 
       padding: 3rem 2rem; border-radius: 12px; width: 100%; max-width: 420px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      position: relative; /* 버전 텍스트 배치를 위해 기준 설정 */
     }
     .lock-logo { font-size: 1.5rem; font-weight: 800; color: #418df1; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
     .lock-input {
@@ -39,7 +40,13 @@
     }
     .error-msg { background-color: rgba(225, 82, 65, 0.1); border: 1px solid rgba(225, 82, 65, 0.3); color: #f27263; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; }
 
-    /* ⚡ 업비트 스타일 최상단 메인 탭 메뉴 */
+    /* 🏷️ [신규] 첫 페이지 전용 세련된 버전 표기 스타일 */
+    .build-version {
+      position: absolute; bottom: 12px; right: 16px;
+      font-size: 0.7rem; color: #4e5b73; font-weight: 600; letter-spacing: 0.5px;
+    }
+
+    /* 대시보드 UI 스타일 */
     .main-nav-tabs {
       display: flex; background-color: #0b162c; border: 1px solid #172443; border-radius: 8px; padding: 4px; margin-bottom: 1.5rem;
     }
@@ -49,7 +56,6 @@
     .nav-tab-btn:hover { color: #ffffff; }
     .nav-tab-btn.active { background-color: #111e36; color: #418df1; border: 1px solid #172443; }
 
-    /* 대시보드 UI 스타일 */
     .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 1.5rem; }
     .sync-status { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #00e676 !important; white-space: nowrap; }
     .sync-dot { width: 6px; height: 6px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; animation: blink 2s infinite; }
@@ -60,14 +66,12 @@
       .sync-status { font-size: 0.7rem; }
     }
 
-    /* 요약 그리드 */
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
     .grid-item { background-color: #0b162c !important; border: 1px solid #172443 !important; padding: 1rem; border-radius: 6px; border-top: 4px solid #58697f; }
     .grid-item .title { font-size: 0.85rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
     .grid-item .amount { font-size: 1.15rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.8rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    /* 📊 유동자산(투자/상승 레드 테마) / 비유동자산(안정적인 블루 테마) 포인트 보더 고정 */
     .accent-유동자산 { border-top-color: #e15241 !important; } 
     .accent-비유동자산 { border-top-color: #418df1 !important; } 
     .accent-기타자산 { border-top-color: #78889b !important; }
@@ -75,4 +79,31 @@
     .filter-sort-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem; gap: 10px; flex-wrap: wrap; }
     .filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
     .filter-btn { background: #111e36; border: 1px solid #172443; color: #9aa5b5; padding: 0.4rem 0.8rem; font-size: 0.8rem; font-weight: 600; border-radius: 4px; }
-    .filter-btn.active { background: #1e3
+    .filter-btn.active { background: #1e3152; color: #ffffff; border-color: #418df1; }
+    .sort-select { background: #111e36; color: #ffffff; border: 1px solid #172443; padding: 0.4rem 1.8rem 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
+
+    .table-container { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1rem; }
+    .table { margin-bottom: 0; background-color: transparent !important; }
+    .table th { font-weight: 600; color: #9aa5b5 !important; background-color: #111e36 !important; border-bottom: 1px solid #172443 !important; padding: 0.75rem 0.5rem; font-size: 0.85rem; white-space: nowrap; }
+    .table td { padding: 0.85rem 0.5rem; border-bottom: 1px solid #172443 !important; color: #ffffff !important; background-color: transparent !important; font-size: 0.9rem; white-space: nowrap; }
+    .table-hover tbody tr:hover td { background-color: #152441 !important; }
+
+    .badge-asset { font-weight: 600; padding: 0.25rem 0.45rem; border-radius: 2px; font-size: 0.75rem; }
+    .badge-유동자산 { background-color: rgba(225, 82, 65, 0.2) !important; color: #f27263 !important; }
+    .badge-비유동자산 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
+    .badge-기타 { background-color: rgba(120, 136, 155, 0.2) !important; color: #b0bec5 !important; }
+    .section-title { font-size: 0.85rem; font-weight: 700; color: #9aa5b5 !important; }
+  </style>
+</head>
+<body>
+
+  <div id="lockScreen">
+    <div class="lock-box text-center">
+      <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
+      <h5 class="text-white fw-bold mb-2">보안 인증 시스템</h5>
+      <p class="small mb-4" style="color: #9aa5b5;">금융 데이터 보호를 위해 비밀번호를 입력해 주세요.</p>
+      
+      <input type="password" id="passwordInput" class="form-control lock-input mb-4" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter') verifyPassword()">
+      <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
+      
+      <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
