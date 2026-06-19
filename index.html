@@ -3,189 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>개인 자산 관리 프로그램</title>
+  <title>자산관리 Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
-      background-color: #f4f6f9;
-      padding-top: 2rem;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: #f8fafc; /* 토스/뱅크 스타일의 미세한 회색빛 배경 */
+      color: #334155;
+      padding-top: 3rem;
+      padding-bottom: 3rem;
     }
     .container {
-      max-width: 1000px;
+      max-width: 960px;
     }
+    /* 트렌디한 자산 요약 카드 스타일 */
     .card-summary {
       background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      border-radius: 16px; /* 더 둥글고 트렌디하게 */
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      transition: all 0.25s ease;
     }
+    .card-summary:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    /* 테이블 컨테이너 */
     .table-container {
       background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
       padding: 1.5rem;
       margin-top: 1.5rem;
     }
-    /* 항목별 포인트 색상 */
-    .border-보험 { border-left: 5px solid #0d6efd; }
-    .border-예금 { border-left: 5px solid #198754; }
-    .border-연금 { border-left: 5px solid #ffc107; }
-    .border-투자 { border-left: 5px solid #dc3545; }
-    .border-기타 { border-left: 5px solid #6c757d; }
-  </style>
-</head>
-<body>
-
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-      <h1 class="h2 text-dark fw-bold">💰 개인 자산 관리</h1>
-      <span class="badge bg-success">구글 시트 실시간 연동</span>
-    </div>
-
-    <h3 class="h5 mb-3 fw-bold text-secondary">📋 자산 항목별 6월 합계</h3>
-    <div class="row g-3 mb-4" id="summaryContainer">
-      <div class="col-12 text-muted">데이터를 계산하는 중입니다...</div>
-    </div>
-
-    <h3 class="h5 mb-3 fw-bold text-secondary">🔍 상세 자산 내역</h3>
-    <div class="table-container">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" id="assetTable">
-          <thead class="table-dark">
-            <tr>
-              <th>자산</th>
-              <th>구분</th>
-              <th>6월 금액</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr>
-              <td colspan="3" class="text-center text-muted py-4">
-                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                데이터를 불러오는 중입니다...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ⚙️ [중요] 내 구글 시트의 열 순서에 맞게 숫자를 지정하세요!
-    // 첫 번째 열이 자산이면 0, 두 번째 열이 구분이면 1, 세 번째 열이 6월이면 2 입니다.
-    const ASSET_COLUMN_INDEX = 0;    // A열
-    const CATEGORY_COLUMN_INDEX = 1; // B열
-    const JUNE_COLUMN_INDEX = 2;     // C열
-
-    // 숫자가 아닌 문자(콤마, 공백, 원 등)를 제거하고 순수 숫자로만 변환하는 함수
-    function parseToNumber(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return 0;
-      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
-      const num = Number(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    // 숫자에 쉼표(,)를 추가하는 함수
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return '0';
-      // 만약 시트에 이미 예쁘게 포맷팅된 문자열이 있다면(cell.f) 그걸 쓰고, 없으면 콤마 처리
-      if (cell.f) return cell.f;
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR');
-    }
-
-    async function loadData() {
-      try {
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json";
-        const response = await fetch(url);
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
-
-        if (!rows || rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
-          return;
-        }
-
-        // 💡 4대 항목 합계용 객체 초기화
-        const targetCategories = ['보험', '예금', '연금', '투자'];
-        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
-        let otherTotal = 0;
-
-        let bodyHTML = '';
-
-        // 첫 번째 줄부터 순서대로 모든 데이터를 읽어옵니다.
-        // (만약 첫 줄이 제목 헤더(자산,구분,6월)라면 아래 if문에서 자동으로 걸러져 표에 들어가지 않고 합산도 안 됩니다.)
-        for (let i = 0; i < rows.length; i++) {
-          const cells = rows[i].c;
-          if (!cells) continue;
-
-          // 열 인덱스를 기반으로 안전하게 데이터 추출
-          const cellAsset = cells[ASSET_COLUMN_INDEX];
-          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
-          const cellJune = cells[JUNE_COLUMN_INDEX];
-
-          const assetVal = cellAsset ? (cellAsset.v ?? '') : '';
-          const categoryVal = cellCategory ? (cellCategory.v ?? '').toString().trim() : '';
-
-          // 첫 행이 글자 헤더('자산', '구분' 등)인 경우 데이터 영역에 추가하지 않고 패스
-          if (assetVal === '자산' || categoryVal === '구분') {
-            continue; 
-          }
-
-          // 6월 금액 숫자로 파싱 후 합산
-          const juneNum = parseToNumber(cellJune);
-
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] += juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          // 상세 테이블 그리기 (자산 | 구분 | 6월 순서)
-          bodyHTML += '<tr>';
-          bodyHTML += `<td>${assetVal}</td>`;
-          bodyHTML += `<td><span class="badge bg-light text-dark border">${categoryVal}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-primary">${formatCurrency(cellJune)} 원</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML;
-
-        // 요약 대시보드 카드 생성
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          summaryHTML += `
-            <div class="col-md-3 col-sm-6">
-              <div class="p-3 card-summary border-${category}">
-                <div class="text-muted small fw-bold">${category} 합계</div>
-                <div class="h4 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')} 원</div>
-              </div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="col-md-3 col-sm-6">
-              <div class="p-3 card-summary border-기타">
-                <div class="text-muted small fw-bold">기타 합계</div>
-                <div class="h4 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')} 원</div>
-              </div>
-            </div>
-          `;
-        }
-
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-      } catch (error) {
-        console.error("데이터 로드 실패:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">데이터를 불러오는 중 오류가 발생했습니다. 구글 시트 공개 설정을 확인하세요.</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+    .table th {
+      font-weight: 600;
+      color: #6
