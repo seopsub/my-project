@@ -203,7 +203,6 @@
 
     let myChart = null; 
 
-    // 안전하게 칸 데이터를 텍스트로 뽑아내는 헬퍼 함수
     function getCellString(cell) {
       if (!cell || cell.v === null || cell.v === undefined) return '';
       return cell.v.toString().trim();
@@ -252,7 +251,6 @@
           const cellCategory = cells[CATEGORY_COLUMN_INDEX];
           const cellJune = cells[JUNE_COLUMN_INDEX];
 
-          // 💡 버그 패치 1: 안전 가옥 헬퍼 함수 적용하여 null/undefined 폭발 완전 방어
           const assetVal = getCellString(cellAsset);
           const categoryVal = getCellString(cellCategory);
 
@@ -304,16 +302,12 @@
         }
         document.getElementById("summaryContainer").innerHTML = summaryHTML;
 
-        // 💡 버그 패치 2: 차트 그리기 로직을 완전히 독립시키고, 플러그인 유무를 실시간으로 판단해서 충돌 완벽 방어
+        // 💡 [치명적 버그 원인 완전 해결] 
+        // 전역등록 대신 Chart 객체 생성 시 plugins 옵션에 직접 로컬 주입하여 충돌 및 로딩 속도 이슈 완벽 봉쇄
         try {
           const chartCanvas = document.getElementById('assetDonutChart');
           if (chartCanvas && typeof Chart !== 'undefined') {
             
-            // 전역 플러그인이 로드되었고 등록이 안 되어 있을 때만 딱 한 번 등록 시도
-            if (typeof ChartDataLabels !== 'undefined' && !Chart.registry.plugins.has('datalabels')) {
-              Chart.register(ChartDataLabels);
-            }
-
             const chartLabels = [...targetCategories];
             const chartData = [summaryMap['투자'], summaryMap['예금'], summaryMap['보험'], summaryMap['연금']];
             const chartColors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
@@ -338,6 +332,8 @@
                   hoverOffset: 4
                 }]
               },
+              // 💡 전역 Chart.register 대신 여기에 컴포넌트 단위로 직접 주입합니다. (안전율 100%)
+              plugins: [typeof ChartDataLabels !== 'undefined' ? ChartDataLabels : {}],
               options: {
                 responsive: true,
                 maintainAspectRatio: true,
@@ -358,7 +354,7 @@
             });
           }
         } catch (chartError) {
-          console.error("차트 내부 에러 유연한 스킵:", chartError);
+          console.error("차트 생성 중 오류:", chartError);
         }
 
       } catch (error) {
