@@ -6,6 +6,7 @@
   <title>자산관리 Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -18,7 +19,7 @@
       max-width: 800px;
     }
     
-    /* 🏆 메인 총합계 배너 */
+    /* 메인 총합계 배너 */
     .main-total-banner {
       background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
@@ -40,7 +41,7 @@
       pointer-events: none;
     }
 
-    /* 🟢 실시간 동기화 네온 점 & 텍스트 */
+    /* 실시간 동기화 네온 점 */
     .sync-status {
       display: inline-flex;
       align-items: center;
@@ -68,250 +69,30 @@
       100% { opacity: 0.3; }
     }
 
-    /* 📱 콤팩트 가로 스크롤 컨테이너 */
-    .scroll-container {
-      display: flex;
-      gap: 0.75rem;
-      overflow-x: auto;
-      padding-bottom: 0.75rem;
-    }
-    .scroll-container::-webkit-scrollbar {
-      height: 4px;
-    }
-    .scroll-container::-webkit-scrollbar-thumb {
-      background-color: #e2e8f0;
-      border-radius: 10px;
-    }
-    
-    /* 미니 포커스 카드 */
-    .card-summary {
-      flex: 0 0 135px;
+    /* 📊 차트와 요약 카드를 품는 대시보드 섹션 */
+    .dashboard-row {
       background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 0.85rem 0.85rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
-      position: relative;
-    }
-    .card-summary .category-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #6b7280;
-    }
-    .card-summary .category-amount {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin-top: 0.25rem;
-    }
-
-    /* 테이블 스타일 */
-    .table-container {
-      background-color: #ffffff;
       border-radius: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
       padding: 1.25rem;
-      margin-top: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+      margin-bottom: 2rem;
     }
-    .table th {
-      font-weight: 600;
-      color: #6b7280;
-      background-color: #f9fafb !important;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0.85rem 0.5rem;
-      font-size: 0.9rem;
-      white-space: nowrap;
-    }
-    .table td {
-      padding: 1rem 0.5rem;
-      border-bottom: 1px solid #f3f4f6;
-      color: #111827;
-      font-size: 0.95rem;
-      white-space: nowrap;
+    .chart-box {
+      max-width: 180px;
+      margin: 0 auto;
     }
 
-    /* 파스텔 배지 스타일 */
-    .badge-asset {
-      font-weight: 500;
-      padding: 0.3rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
+    /* 📱 콤팩트 세로형/가로형 유연한 레이아웃 */
+    .summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
     }
-    .badge-투자 { background-color: #fef2f2; color: #b91c1c; }
-    .badge-예금 { background-color: #ecfdf5; color: #047857; }
-    .badge-보험 { background-color: #eff6ff; color: #1d4ed8; }
-    .badge-연금 { background-color: #fffbeb; color: #b45309; }
-    .badge-기타 { background-color: #f3f4f6; color: #4b5563; }
-
-    /* 미니 카드의 상단 포인트 선 조정 */
-    .accent-투자 { border-top: 3px solid #ef4444; }
-    .accent-예금 { border-top: 3px solid #10b981; }
-    .accent-보험 { border-top: 3px solid #3b82f6; }
-    .accent-연금 { border-top: 4px solid #f59e0b; }
-    .accent-기타 { border-top: 3px solid #6b7280; }
-  </style>
-</head>
-<body>
-
-  <div class="container">
     
-    <div class="main-total-banner text-center">
-      <div class="text-white-50 small fw-semibold text-uppercase tracking-wide mb-2" style="letter-spacing: 1px;">나의 총 자산 현황</div>
-      <div class="display-4 fw-bold text-white my-3 tracking-tight" id="grandTotalDisplay" style="font-size: 2.8rem;">0원</div>
-      
-      <div class="sync-status">
-        <span class="sync-dot"></span>
-        <span>LIVE SYNC</span>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider m-0" style="font-size: 0.8rem;">항목별 요약</h3>
-    </div>
-    <div class="scroll-container mb-4" id="summaryContainer">
-      <div class="text-muted small p-2">데이터를 불러오는 중입니다...</div>
-    </div>
-
-    <h3 class="fs-7 fw-bold text-muted text-uppercase tracking-wider mb-2" style="font-size: 0.8rem;">상세 자산 내역</h3>
-    <div class="table-container">
-      <div class="table-responsive">
-        <table class="table align-middle" id="assetTable">
-          <thead>
-            <tr>
-              <th>자산명</th>
-              <th>구분</th>
-              <th class="text-end">금액</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr>
-              <td colspan="3" class="text-center text-muted py-5">
-                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                자산 정보를 파싱하고 있습니다...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const ASSET_COLUMN_INDEX = 0;    
-    const CATEGORY_COLUMN_INDEX = 1; 
-    const JUNE_COLUMN_INDEX = 2;     
-
-    function parseToNumber(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return 0;
-      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
-      if (str === '') return 0;
-      const num = Number(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' 원';
-    }
-
-    async function loadData() {
-      try {
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
-        const response = await fetch(url);
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        
-        if (!json || !json.table || !json.table.rows) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">구글 시트 데이터 구조를 읽을 수 없습니다.</td></tr>`;
-          return;
-        }
-        
-        const rows = json.table.rows;
-        if (rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 비어 있습니다.</td></tr>`;
-          return;
-        }
-
-        const targetCategories = ['투자', '예금', '보험', '연금'];
-        
-        // 💡 [버그 예방] 데이터 구조가 유연하게 매핑되도록 확실하게 초기값을 0으로 픽스
-        const summaryMap = { '투자': 0, '예금': 0, '보험': 0, '연금': 0 };
-        let otherTotal = 0;
-        let grandTotal = 0; 
-
-        let bodyHTML = '';
-
-        for (let i = 0; i < rows.length; i++) {
-          if (!rows[i] || !rows[i].c || !Array.isArray(rows[i].c)) continue;
-          const cells = rows[i].c;
-
-          const cellAsset = cells[ASSET_COLUMN_INDEX];
-          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
-          const cellJune = cells[JUNE_COLUMN_INDEX];
-
-          const assetVal = (cellAsset && cellAsset.v !== null) ? cellAsset.v.toString().trim() : '';
-          const categoryVal = (cellCategory && cellCategory.v !== null) ? cellCategory.v.toString().trim() : '';
-
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
-            continue; 
-          }
-
-          const juneNum = parseToNumber(cellJune);
-          grandTotal += juneNum; 
-
-          // 객체에 키가 존재하는지 방어 체크 후 누적
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] = (summaryMap[categoryVal] || 0) + juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">| 표시할 내역이 없습니다.</td></tr>`;
-        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
-
-        // 슬라이더 카드 렌더링 진행
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          const totalVal = summaryMap[category] || 0; // 혹시라도 없으면 0원 강제 대입
-          summaryHTML += `
-            <div class="card-summary accent-${category}">
-              <div class="category-title">${category}</div>
-              <div class="category-amount">${totalVal.toLocaleString('ko-KR')}원</div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="card-summary accent-기타">
-              <div class="category-title">기타 자산</div>
-              <div class="category-amount">${otherTotal.toLocaleString('ko-KR')}원</div>
-            </div>
-          `;
-        }
-
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-      } catch (error) {
-        // 💡 디버깅의 핵심: 에러 발생 시 로딩 표기를 끊고 에러 로그를 화면에 완벽하게 박아줍니다.
-        console.error("오류 발생 원인:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 스크립트 중단 오류: ${error.message}</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+    .mini-bar-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9fafb;
+      padding: 0.6
