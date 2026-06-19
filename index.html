@@ -13,6 +13,8 @@
       color: #ffffff !important;
       padding-top: 1rem;
       padding-bottom: 3rem;
+      /* 🛠️ [고도화] 모바일 스와이프 시 브라우저 기본 당겨서 새로고침(Pull-to-refresh) 현상 방어 */
+      overscroll-behavior-y: contain; 
     }
     .container { max-width: 800px; }
     
@@ -26,7 +28,7 @@
       background-color: #0b162c; border: 1px solid #1a2e56; 
       padding: 3rem 2rem; border-radius: 12px; width: 100%; max-width: 420px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-      position: relative; /* 버전 텍스트 배치를 위해 기준 설정 */
+      position: relative;
     }
     .lock-logo { font-size: 1.5rem; font-weight: 800; color: #418df1; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
     .lock-input {
@@ -40,13 +42,12 @@
     }
     .error-msg { background-color: rgba(225, 82, 65, 0.1); border: 1px solid rgba(225, 82, 65, 0.3); color: #f27263; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; }
 
-    /* 🏷️ [신규] 첫 페이지 전용 세련된 버전 표기 스타일 */
     .build-version {
       position: absolute; bottom: 12px; right: 16px;
       font-size: 0.7rem; color: #4e5b73; font-weight: 600; letter-spacing: 0.5px;
     }
 
-    /* 대시보드 UI 스타일 */
+    /* ⚡ 업비트 스타일 최상단 메인 탭 메뉴 */
     .main-nav-tabs {
       display: flex; background-color: #0b162c; border: 1px solid #172443; border-radius: 8px; padding: 4px; margin-bottom: 1.5rem;
     }
@@ -56,6 +57,7 @@
     .nav-tab-btn:hover { color: #ffffff; }
     .nav-tab-btn.active { background-color: #111e36; color: #418df1; border: 1px solid #172443; }
 
+    /* 대시보드 UI 스타일 */
     .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 1.5rem; }
     .sync-status { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #00e676 !important; white-space: nowrap; }
     .sync-dot { width: 6px; height: 6px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; animation: blink 2s infinite; }
@@ -108,7 +110,7 @@
       
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
       
-      <div class="build-version">BUILD v1.1.0</div>
+      <div class="build-version">BUILD v1.2.0</div>
     </div>
   </div>
 
@@ -166,25 +168,66 @@
   </div>
 
   <script>
-    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycby1-ba2LYYB_ZZLkHMhRgNJ71k-xWmiHUCFzTxyg4qdJdFdqo1XAqw_SYfSFCfTnEwQ/exec";
+    const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbyIntegrationURL_PlaceHolder/exec"; 
+    // 💡 실제 사용 시 본인의 완벽한 구글 웹 앱 URL 주소 "https://script.google.com/macros/s/AKfycbySYNatGZ6sgXmjZsl5QN-HWOMFuSDpqCgqgzWBOG0T7RoLPaJjfQuV5BK9lb988vJq/exec"를 복사해서 이 따옴표 안에 집어넣어주세요!
 
     let rawServerData = null; 
     let currentTabKey = 'sheet1'; 
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
+    // 🛠️ [고도화] 터치 스와이프 제스처 변수 선언
+    let touchStartX = 0;
+    let touchEndX = 0;
+
     async function verifyPassword() {
       const password = document.getElementById("passwordInput").value;
       const errorDiv = document.getElementById("lockError");
       
       if (password === "1235") {
-        // 🛠️ [디버깅 타겟 치료] 치명적인 문법 오타였던 errorDiv.add 문장을 깔끔하게 도려냄!
         errorDiv.classList.add('d-none');
         document.getElementById("lockScreen").classList.add('d-none');
         document.getElementById("mainDashboard").classList.remove('d-none');
         await loadServerData();
+        
+        // 🛠️ [고도화] 대시보드가 인증 오픈된 직후 터치 제스처 스와이프 리스너 가동
+        initSwipeGesture();
       } else {
         errorDiv.classList.remove('d-none');
+      }
+    }
+
+    // 🛠️ [고도화] 손가락 좌우 드래그 스와이프 감지 엔진 함수
+    function initSwipeGesture() {
+      const dashboard = document.getElementById("mainDashboard");
+      
+      dashboard.addEventListener('touchstart', (e) => {
+        // 셀렉트 박스나 가로 스크롤 테이블 안에서의 간섭을 막기 위한 예외 처리
+        if (e.target.closest('select') || e.target.closest('.table-responsive')) return;
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      dashboard.addEventListener('touchend', (e) => {
+        if (e.target.closest('select') || e.target.closest('.table-responsive')) return;
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipeAction();
+      }, { passive: true });
+    }
+
+    // 왼쪽/오른쪽 방향 연산 및 탭 전환 격발 함수
+    function handleSwipeAction() {
+      const swipeDistance = touchEndX - touchStartX;
+      const swipeThreshold = 80; // 스와이프로 인정할 최소 픽셀 거리 (너무 민감하게 반응하지 않도록 세팅)
+
+      // 슥 밀었을 때 탭 위치 스위칭 연동
+      if (Math.abs(swipeDistance) > swipeThreshold) {
+        if (swipeDistance > 0 && currentTabKey === 'sheet2') {
+          // 👉 오른쪽으로 밀었을 때: MY ASSET으로 이동
+          switchMainTab('sheet1');
+        } else if (swipeDistance < 0 && currentTabKey === 'sheet1') {
+          // 👈 왼쪽으로 밀었을 때: OUR ASSET으로 이동
+          switchMainTab('sheet2');
+        }
       }
     }
 
