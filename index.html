@@ -81,7 +81,7 @@
       margin-bottom: 2rem;
     }
     .chart-box {
-      max-width: 200px; /* 비율 글자 여유 공간을 위해 소폭 확장 */
+      max-width: 200px;
       margin: 0 auto;
     }
 
@@ -197,6 +197,11 @@
   </div>
 
   <script>
+    // 💡 [치명적 버그 해결] Chart.js v3+ 환경에서 datalabels 플러그인을 명시적으로 전역 등록해 줍니다.
+    if (typeof ChartDataLabels !== 'undefined') {
+      Chart.register(ChartDataLabels);
+    }
+
     const ASSET_COLUMN_INDEX = 0;    
     const CATEGORY_COLUMN_INDEX = 1; 
     const JUNE_COLUMN_INDEX = 2;     
@@ -263,20 +268,4 @@
             otherTotal += juneNum;
           }
 
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; 
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal text-white-50 ms-1">원</span>`;
-
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          const totalVal = summaryMap[category] || 0;
-          // 오른쪽 목록에도 콤팩트하게 비율(%) 노출해 주기
-          const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
+          const badge
