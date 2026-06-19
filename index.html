@@ -18,14 +18,55 @@
       max-width: 800px;
     }
     
-    /* 전체 총합계 메인 배너 */
+    /* 🏆 핀테크 앱 스타일 프리미엄 메인 총합계 배너 */
     .main-total-banner {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
-      border-radius: 24px;
-      padding: 2rem 1.5rem;
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
+      border-radius: 28px;
+      padding: 2.5rem 1.5rem;
+      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.3);
       margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* 고급스러운 메탈릭 광택 효과 배경 레이어 */
+    .main-total-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+    }
+
+    /* 🟢 시인성 개선: 실시간 동기화 네온 점 & 텍스트 */
+    .sync-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #cbd5e1; /* 글자색을 밝게 하여 시인성 확보 */
+      letter-spacing: 0.5px;
+    }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #10b981; /* 선명한 네온 그린 */
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
     }
 
     /* 가로 스크롤 컨테이너 */
@@ -52,7 +93,7 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
     }
 
-    /* 테이블 컨테이너 및 💡 한 줄 정렬 방어 스타일 */
+    /* 테이블 스타일 */
     .table-container {
       background-color: #ffffff;
       border-radius: 20px;
@@ -67,14 +108,14 @@
       border-bottom: 1px solid #e5e7eb;
       padding: 0.85rem 0.5rem;
       font-size: 0.9rem;
-      white-space: nowrap; /* 헤더 줄바꿈 방지 */
+      white-space: nowrap;
     }
     .table td {
       padding: 1rem 0.5rem;
       border-bottom: 1px solid #f3f4f6;
       color: #111827;
       font-size: 0.95rem;
-      white-space: nowrap; /* 💡 금액 및 데이터가 한 줄로 표시되도록 강제 설정 */
+      white-space: nowrap;
     }
 
     /* 파스텔 배지 */
@@ -102,147 +143,11 @@
   <div class="container">
     
     <div class="main-total-banner text-center">
-      <div class="opacity-75 small fw-medium text-uppercase tracking-wider">나의 자산 총합계 (6월)</div>
-      <div class="display-5 fw-bold my-2" id="grandTotalDisplay">0<span class="fs-4 fw-normal opacity-75 ms-1">원</span></div>
-      <span class="badge bg-white bg-opacity-20 rounded-pill small" style="font-size: 0.75rem;">Live Syncing...</span>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h3 class="fs-6 fw-bold text-secondary m-0">항목별 요약</h3>
-    </div>
-    <div class="scroll-container mb-4" id="summaryContainer">
-      <div class="text-muted small p-2">계산 중...</div>
-    </div>
-
-    <h3 class="fs-6 fw-bold text-secondary mb-2">상세 자산 내역</h3>
-    <div class="table-container">
-      <div class="table-responsive">
-        <table class="table align-middle" id="assetTable">
-          <thead>
-            <tr>
-              <th>자산명</th>
-              <th>구분</th>
-              <th class="text-end">금액</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr>
-              <td colspan="3" class="text-center text-muted py-5">
-                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                불러오는 중...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="text-white-50 small fw-semibold text-uppercase tracking-wide mb-2" style="letter-spacing: 1px;">나의 총 자산 현황</div>
+      <div class="display-4 fw-bold text-white my-3 tracking-tight" id="grandTotalDisplay" style="font-size: 2.8rem;">0원</div>
+      
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span>LIVE SYNC</span>
       </div>
     </div>
-  </div>
-
-  <script>
-    const ASSET_COLUMN_INDEX = 0;    
-    const CATEGORY_COLUMN_INDEX = 1; 
-    const JUNE_COLUMN_INDEX = 2;     
-
-    function parseToNumber(cell) {
-      if (!cell || cell.v === null || cell.v === undefined) return 0;
-      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
-      const num = Number(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    function formatCurrency(cell) {
-      if (!cell || cell.v === null || cell.v === undefined || cell.v === '') return '0 원';
-      if (cell.f) return cell.f + ' 원';
-      const num = parseToNumber(cell);
-      return num.toLocaleString('ko-KR') + ' 원';
-    }
-
-    async function loadData() {
-      try {
-        const url = "https://docs.google.com/spreadsheets/d/1sLDzNjAnvVhMCctNZgttP6daktZalRVWfolCx9XciT8/gviz/tq?tqx=out:json&_=" + new Date().getTime();
-        const response = await fetch(url);
-        const text = await response.text();
-        
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
-
-        if (!rows || rows.length === 0) {
-          document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
-          return;
-        }
-
-        const targetCategories = ['보험', '예금', '연금', '투자'];
-        const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
-        let otherTotal = 0;
-        let grandTotal = 0; 
-
-        let bodyHTML = '';
-
-        for (let i = 0; i < rows.length; i++) {
-          const cells = rows[i].c;
-          if (!cells) continue;
-
-          const cellAsset = cells[ASSET_COLUMN_INDEX];
-          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
-          const cellJune = cells[JUNE_COLUMN_INDEX];
-
-          const assetVal = cellAsset && cellAsset.v !== null ? cellAsset.v.toString().trim() : '';
-          const categoryVal = cellCategory && cellCategory.v !== null ? cellCategory.v.toString().trim() : '';
-
-          if (assetVal === '자산' || categoryVal === '구분' || assetVal.includes('계') || categoryVal.includes('계') || (assetVal === '' && categoryVal === '')) {
-            continue; 
-          }
-
-          const juneNum = parseToNumber(cellJune);
-          grandTotal += juneNum; 
-
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] += juneNum;
-          } else if (categoryVal !== '') {
-            otherTotal += juneNum;
-          }
-
-          const badgeClass = targetCategories.includes(categoryVal) ? `badge-${categoryVal}` : 'badge-기타';
-
-          bodyHTML += '<tr>';
-          bodyHTML += `<td class="fw-semibold text-dark text-wrap" style="white-space: normal; min-width: 120px;">${assetVal || '-'}</td>`; // 자산명만 너무 길어지면 자연스럽게 개행되도록 하되 최소 가로폭을 확보
-          bodyHTML += `<td><span class="badge-asset ${badgeClass}">${categoryVal || '미분류'}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-dark">${formatCurrency(cellJune)}</td>`;
-          bodyHTML += '</tr>';
-        }
-        
-        document.getElementById("tableBody").innerHTML = bodyHTML || `<tr><td colspan="3" class="text-center py-4">표시할 내역이 없습니다.</td></tr>`;
-
-        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal opacity-75 ms-1">원</span>`;
-
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          summaryHTML += `
-            <div class="card-summary accent-${category}">
-              <div class="text-muted small fw-medium">${category}</div>
-              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')}원</div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          summaryHTML += `
-            <div class="card-summary accent-기타">
-              <div class="text-muted small fw-medium">기타 자산</div>
-              <div class="fs-5 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')}원</div>
-            </div>
-          `;
-        }
-
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-      } catch (error) {
-        console.error("오류 발생:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">데이터 로드 실패</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
