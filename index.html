@@ -71,21 +71,26 @@
   </div>
 
   <script>
+    // ⚙️ [중요] 내 구글 시트의 열 순서에 맞게 숫자를 지정하세요!
+    // 첫 번째 열이 자산이면 0, 두 번째 열이 구분이면 1, 세 번째 열이 6월이면 2 입니다.
+    const ASSET_COLUMN_INDEX = 0;    // A열
+    const CATEGORY_COLUMN_INDEX = 1; // B열
+    const JUNE_COLUMN_INDEX = 2;     // C열
+
     // 숫자가 아닌 문자(콤마, 공백, 원 등)를 제거하고 순수 숫자로만 변환하는 함수
-    function parseToNumber(value) {
-      if (value === null || value === undefined || value === '') return 0;
-      
-      // 구글 시트의 객체 형태 데이터 처리 (.f나 .v 속성 방어용)
-      let str = typeof value === 'object' ? (value.v ?? '') : value;
-      str = str.toString().replace(/[^0-9.-]/g, ''); // 숫자, 마이너스, 소수점 제외 전멸
-      
+    function parseToNumber(cell) {
+      if (!cell || cell.v === null || cell.v === undefined) return 0;
+      let str = cell.v.toString().replace(/[^0-9.-]/g, ''); 
       const num = Number(str);
       return isNaN(num) ? 0 : num;
     }
 
     // 숫자에 쉼표(,)를 추가하는 함수
-    function formatCurrency(value) {
-      const num = parseToNumber(value);
+    function formatCurrency(cell) {
+      if (!cell || cell.v === null || cell.v === undefined) return '0';
+      // 만약 시트에 이미 예쁘게 포맷팅된 문자열이 있다면(cell.f) 그걸 쓰고, 없으면 콤마 처리
+      if (cell.f) return cell.f;
+      const num = parseToNumber(cell);
       return num.toLocaleString('ko-KR');
     }
 
@@ -98,57 +103,51 @@
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows;
 
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
           document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center py-4">데이터가 없습니다.</td></tr>`;
           return;
         }
 
-        // 첫 번째 행(헤더) 분석하여 각 컬럼의 정확한 위치(인덱스) 추적
-        const firstRow = rows[0].c;
-        let assetIdx = -1;
-        let categoryIdx = -1;
-        let juneIdx = -1;
-
-        firstRow.forEach((cell, idx) => {
-          if (!cell) return;
-          const colName = cell.v ? cell.v.toString().trim() : '';
-          
-          if (colName.includes('자산')) assetIdx = idx;
-          if (colName.includes('구분')) categoryIdx = idx;
-          if (colName.includes('6월')) juneIdx = idx;
-        });
-
-        // 💡 4대 항목 맵 초기화
+        // 💡 4대 항목 합계용 객체 초기화
         const targetCategories = ['보험', '예금', '연금', '투자'];
         const summaryMap = { '보험': 0, '예금': 0, '연금': 0, '투자': 0 };
         let otherTotal = 0;
 
         let bodyHTML = '';
 
-        // 두 번째 줄(데이터)부터 반복
-        for (let i = 1; i < rows.length; i++) {
+        // 첫 번째 줄부터 순서대로 모든 데이터를 읽어옵니다.
+        // (만약 첫 줄이 제목 헤더(자산,구분,6월)라면 아래 if문에서 자동으로 걸러져 표에 들어가지 않고 합산도 안 됩니다.)
+        for (let i = 0; i < rows.length; i++) {
           const cells = rows[i].c;
           if (!cells) continue;
 
-          // 인덱스를 기반으로 각 행의 안전한 데이터 추출
-          const assetVal = (assetIdx !== -1 && cells[assetIdx]) ? (cells[assetIdx].f ?? cells[assetIdx].v ?? '') : '';
-          const categoryVal = (categoryIdx !== -1 && cells[categoryIdx]) ? (cells[categoryIdx].v ?? '').toString().trim() : '기타';
-          const juneRawVal = (juneIdx !== -1 && cells[juneIdx]) ? cells[juneIdx] : '';
+          // 열 인덱스를 기반으로 안전하게 데이터 추출
+          const cellAsset = cells[ASSET_COLUMN_INDEX];
+          const cellCategory = cells[CATEGORY_COLUMN_INDEX];
+          const cellJune = cells[JUNE_COLUMN_INDEX];
 
-          // 6월 금액 숫자로 파싱 후 합산 로직 실행
-          const juneNum = parseToNumber(juneRawVal);
+          const assetVal = cellAsset ? (cellAsset.v ?? '') : '';
+          const categoryVal = cellCategory ? (cellCategory.v ?? '').toString().trim() : '';
+
+          // 첫 행이 글자 헤더('자산', '구분' 등)인 경우 데이터 영역에 추가하지 않고 패스
+          if (assetVal === '자산' || categoryVal === '구분') {
+            continue; 
+          }
+
+          // 6월 금액 숫자로 파싱 후 합산
+          const juneNum = parseToNumber(cellJune);
 
           if (targetCategories.includes(categoryVal)) {
             summaryMap[categoryVal] += juneNum;
-          } else {
+          } else if (categoryVal !== '') {
             otherTotal += juneNum;
           }
 
-          // 상세 테이블 그리기 (자산 | 구분 | 6월 순서 고정)
+          // 상세 테이블 그리기 (자산 | 구분 | 6월 순서)
           bodyHTML += '<tr>';
           bodyHTML += `<td>${assetVal}</td>`;
           bodyHTML += `<td><span class="badge bg-light text-dark border">${categoryVal}</span></td>`;
-          bodyHTML += `<td class="text-end fw-bold text-primary">${formatCurrency(juneRawVal)} 원</td>`;
+          bodyHTML += `<td class="text-end fw-bold text-primary">${formatCurrency(cellJune)} 원</td>`;
           bodyHTML += '</tr>';
         }
         
@@ -161,7 +160,7 @@
             <div class="col-md-3 col-sm-6">
               <div class="p-3 card-summary border-${category}">
                 <div class="text-muted small fw-bold">${category} 합계</div>
-                <div class="h4 mb-0 fw-bold text-dark mt-1">${formatCurrency(summaryMap[category])} 원</div>
+                <div class="h4 mb-0 fw-bold text-dark mt-1">${summaryMap[category].toLocaleString('ko-KR')} 원</div>
               </div>
             </div>
           `;
@@ -172,7 +171,7 @@
             <div class="col-md-3 col-sm-6">
               <div class="p-3 card-summary border-기타">
                 <div class="text-muted small fw-bold">기타 합계</div>
-                <div class="h4 mb-0 fw-bold text-dark mt-1">${formatCurrency(otherTotal)} 원</div>
+                <div class="h4 mb-0 fw-bold text-dark mt-1">${otherTotal.toLocaleString('ko-KR')} 원</div>
               </div>
             </div>
           `;
@@ -182,7 +181,7 @@
 
       } catch (error) {
         console.error("데이터 로드 실패:", error);
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">데이터 파싱 오류가 발생했습니다. 구글 시트의 컬럼명을 확인해 주세요.</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">데이터를 불러오는 중 오류가 발생했습니다. 구글 시트 공개 설정을 확인하세요.</td></tr>`;
       }
     }
 
