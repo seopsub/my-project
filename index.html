@@ -184,7 +184,7 @@
   </div>
 
   <script>
-    // 💡 구글에서 발급받으신 주소를 아래 큰따옴표 안에 꼭 넣어주세요!
+    // 🔗 전달해주신 완전한 구글 배포 주소 세팅 완료
     const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbySYNatGZ6sgXmjZsl5QN-HWOMFuSDpqCgqgzWBOG0T7RoLPaJjfQuV5BK9lb988vJq/exec";
 
     let currentAssetList = []; 
@@ -194,9 +194,8 @@
       const password = document.getElementById("passwordInput").value;
       const errorDiv = document.getElementById("lockError");
       
-      // 초기 패스워드는 '1234'입니다.
-      if (password === "1234") {
-        // 🛠️ [버그 수정 완료] 오타로 유발되던 파싱 파괴 스크립트 에러 해결
+      // 🔐 [비밀번호 교정 완료] 1235 설정 반영
+      if (password === "1235") {
         errorDiv.classList.add('d-none');
         document.getElementById("lockScreen").classList.add('d-none');
         document.getElementById("mainDashboard").classList.remove('d-none');
