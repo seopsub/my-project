@@ -74,7 +74,6 @@
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    /* 🎨 포인트 보더 컬러 매칭 연동 */
     .accent-투자, .accent-유동자산 { border-top-color: #e15241 !important; } 
     .accent-예금, .accent-비유동자산 { border-top-color: #418df1 !important; } 
     .accent-보험 { border-top-color: #26a69a !important; } 
@@ -115,7 +114,7 @@
       
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
       
-      <div class="build-version">BUILD v1.3.0</div>
+      <div class="build-version">BUILD v1.4.0</div>
     </div>
   </div>
 
@@ -180,6 +179,9 @@
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
+    // 💡 [핵심 추가] 시트1의 SUM 값을 들고 있을 내부 보안 변수
+    let sheet1GrandTotalSum = 0; 
+
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -238,9 +240,34 @@
       try {
         const response = await fetch(MY_SECRET_URL + "?_=" + new Date().getTime());
         rawServerData = await response.json();
+        
+        // 🛠️ [고도화 엔진 가동] 
+        // 1단계. 우선 시트1(MY ASSET) 데이터를 빠르게 예비 순회해서 진짜 최종 SUM 값을 먼저 연산해 냅니다.
+        calculateSheet1Total();
+        
         switchMainTab('sheet1');
       } catch (error) {
         document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 데이터 동기화 실패 또는 연동 오류</td></tr>`;
+      }
+    }
+
+    // 🛠️ [신규 함수] 시트1의 SUM 자산 총액을 엑셀 함수 없이 가상 연산해내는 보안 함수
+    function calculateSheet1Total() {
+      sheet1GrandTotalSum = 0;
+      if (!rawServerData || !rawServerData.sheet1) return;
+      const rows = rawServerData.sheet1.table?.rows || [];
+      
+      for (let i = 0; i < rows.length; i++) {
+        if (!rows[i] || !rows[i].c) continue;
+        const cells = rows[i].c;
+        const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
+        const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
+        const amountNum = parseToNumber(cells[2]?.v);
+
+        if (assetVal === '자산' || categoryVal === '구분' || assetVal === '' || assetVal.includes('계') || categoryVal.includes('계')) {
+          continue;
+        }
+        sheet1GrandTotalSum += amountNum;
       }
     }
 
@@ -257,14 +284,12 @@
       processAndRenderData();
     }
 
-    // 🛠️ [고도화 반영 영역] 탭별 전광판 타겟 카테고리 완전 이원화
     function processAndRenderData() {
       if (!rawServerData || !rawServerData[currentTabKey]) return;
       
-      const rows = rawServerData[currentTabKey].table?.rows || [];
+      let rows = rawServerData[currentTabKey].table?.rows || [];
       currentAssetList = [];
 
-      // 🎯 중요 분기: MY ASSET은 기존 4대 분류 유지 / OUR ASSET은 대분류 고정
       let targetCategories = [];
       const summaryMap = {};
 
@@ -280,9 +305,23 @@
       let grandTotal = 0;
       const uniqueCategories = new Set();
 
-      for (let i = 0; i < rows.length; i++) {
-        if (!rows[i] || !rows[i].c) continue;
-        const cells = rows[i].c;
+      // 🛠️ [가상 주입 로직 연동]
+      // 만약 현재 그리는 화면이 'sheet2 (OUR ASSET)' 탭이라면, 
+      // 구글 시트2 데이터를 훑기 전에 '나의 자산(시트1 SUM)'을 유동자산 배열 객체로 임의로 가공해서 메모리에 선행 주입합니다!
+      let blendedRows = [...rows];
+      if (currentTabKey === 'sheet2' && sheet1GrandTotalSum > 0) {
+        blendedRows.unshift({
+          c: [
+            { v: "나의 자산 (MY ASSET 총액)" }, // 자산명 자동으로 명명
+            { v: "유동자산" },                  // 카테고리 고정
+            { v: sheet1GrandTotalSum }         // 가상 참조한 연산 SUM 값
+          ]
+        });
+      }
+
+      for (let i = 0; i < blendedRows.length; i++) {
+        if (!blendedRows[i] || !blendedRows[i].c) continue;
+        const cells = blendedRows[i].c;
 
         const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
         const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
@@ -314,7 +353,6 @@
 
       document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
 
-      // 🎯 상단 전광판 그리드 빌드 (현재 탭의 타겟 배열 규격에 맞춰 표출)
       let summaryHTML = '';
       targetCategories.forEach(category => {
         const totalVal = summaryMap[category] || 0;
