@@ -3,117 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>보안 자산관리 Dashboard</title>
-  <!-- 부트스트랩 5 CSS CDN -->
+  <title>통합 자산관리 Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- 프리텐다드 폰트 적용 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
       background-color: #091224 !important; /* 💙 업비트 시그니처 다크 네이비 */
       color: #ffffff !important;
-      padding-top: 2rem;
+      padding-top: 1rem;
       padding-bottom: 3rem;
     }
     .container { max-width: 800px; }
     
-    /* 🔒 업비트 로그인 스타일의 명확한 잠금 화면 UI */
+    /* 🔒 잠금 화면 UI */
     #lockScreen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: #091224; z-index: 9999;
-      display: flex; justify-content: center; align-items: center;
-      padding: 20px;
+      display: flex; justify-content: center; align-items: center; padding: 20px;
     }
     .lock-box {
-      background-color: #0b162c; 
-      border: 1px solid #1a2e56; 
-      padding: 3rem 2rem; 
-      border-radius: 12px; 
-      width: 100%; 
-      max-width: 420px;
+      background-color: #0b162c; border: 1px solid #1a2e56; 
+      padding: 3rem 2rem; border-radius: 12px; width: 100%; max-width: 420px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
-    .lock-logo {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: #418df1; 
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
-    }
+    .lock-logo { font-size: 1.5rem; font-weight: 800; color: #418df1; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
     .lock-input {
-      background: #111e36 !important; 
-      color: #ffffff !important; 
-      border: 1px solid #223a66 !important;
-      text-align: center; 
-      font-size: 1.3rem; 
-      letter-spacing: 6px;
-      padding: 0.75rem !important;
-      border-radius: 6px !important;
+      background: #111e36 !important; color: #ffffff !important; border: 1px solid #223a66 !important;
+      text-align: center; font-size: 1.3rem; letter-spacing: 6px; padding: 0.75rem !important; border-radius: 6px !important;
     }
-    .lock-input:focus { 
-      border-color: #418df1 !important; 
-      box-shadow: 0 0 0 3px rgba(65, 141, 241, 0.2) !important; 
-    }
+    .lock-input:focus { border-color: #418df1 !important; box-shadow: 0 0 0 3px rgba(65, 141, 241, 0.2) !important; }
     .lock-btn { 
-      background-color: #418df1 !important; 
-      border: none !important; 
-      font-weight: 700; 
-      color: #ffffff !important; 
-      padding: 0.85rem !important;
-      font-size: 1rem;
-      border-radius: 6px !important;
-      transition: background 0.2s;
+      background-color: #418df1 !important; border: none !important; font-weight: 700; color: #ffffff !important; 
+      padding: 0.85rem !important; font-size: 1rem; border-radius: 6px !important;
     }
-    .lock-btn:hover {
-      background-color: #2b7cd9 !important;
+    .error-msg { background-color: rgba(225, 82, 65, 0.1); border: 1px solid rgba(225, 82, 65, 0.3); color: #f27263; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; }
+
+    /* ⚡ 업비트 스타일 최상단 메인 탭 메뉴 */
+    .main-nav-tabs {
+      display: flex; background-color: #0b162c; border: 1px solid #172443; border-radius: 8px; padding: 4px; margin-bottom: 1.5rem;
     }
-    .error-msg {
-      background-color: rgba(225, 82, 65, 0.1);
-      border: 1px solid rgba(225, 82, 65, 0.3);
-      color: #f27263;
-      padding: 0.6rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      margin-top: 1rem;
+    .nav-tab-btn {
+      flex: 1; background: transparent; border: none; color: #9aa5b5; font-weight: 700; padding: 0.75rem; font-size: 0.95rem; border-radius: 6px; transition: all 0.2s;
     }
+    .nav-tab-btn:hover { color: #ffffff; }
+    .nav-tab-btn.active { background-color: #111e36; color: #418df1; border: 1px solid #172443; }
 
     /* 대시보드 UI 스타일 */
-    .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 2rem; }
-    
-    /* 🛠️ [고도화] 모바일 글자 깨짐 방지 스타일 업그레이드 */
-    .sync-status { 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 5px; 
-      font-size: 0.75rem; 
-      font-weight: 600; 
-      color: #00e676 !important; 
-      white-space: nowrap; /* 텍스트가 강제로 줄바꿈되는 현상 원천 차단 */
-    }
+    .main-total-banner { background-color: #0b162c !important; border: 1px solid #172443 !important; border-radius: 8px; padding: 1.75rem 1.5rem; margin-bottom: 1.5rem; }
+    .sync-status { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #00e676 !important; white-space: nowrap; }
     .sync-dot { width: 6px; height: 6px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; animation: blink 2s infinite; }
     @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-    /* 모바일에서 금액 서체가 너무 크면 배너를 삐져나갈 수 있어 크기 동적 조절 */
     @media (max-width: 576px) {
       #grandTotalDisplay { font-size: 1.8rem !important; }
       .sync-status { font-size: 0.7rem; }
     }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
     .grid-item { background-color: #0b162c !important; border: 1px solid #172443 !important; padding: 1rem; border-radius: 6px; border-top: 4px solid #58697f; }
     .grid-item .title { font-size: 0.8rem; font-weight: 600; color: #9aa5b5 !important; margin-bottom: 0.25rem; }
     .grid-item .amount { font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
     .grid-item .percent { font-size: 0.75rem; color: #6cb1ff; font-weight: 500; margin-left: 4px; }
 
-    .accent-투자 { border-top-color: #e15241 !important; } 
-    .accent-예금 { border-top-color: #418df1 !important; } 
+    /* 동적 포인트 컬러 보더 클래스들 */
+    .accent-투자, .accent-부동산 { border-top-color: #e15241 !important; } 
+    .accent-예금, .accent-자동차 { border-top-color: #418df1 !important; } 
     .accent-보험 { border-top-color: #26a69a !important; } 
     .accent-연금 { border-top-color: #ffb300 !important; } 
     .accent-기타 { border-top-color: #78889b !important; }
 
     .filter-sort-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem; gap: 10px; flex-wrap: wrap; }
-    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
     .filter-btn { background: #111e36; border: 1px solid #172443; color: #9aa5b5; padding: 0.4rem 0.8rem; font-size: 0.8rem; font-weight: 600; border-radius: 4px; }
     .filter-btn.active { background: #1e3152; color: #ffffff; border-color: #418df1; }
     .sort-select { background: #111e36; color: #ffffff; border: 1px solid #172443; padding: 0.4rem 1.8rem 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
@@ -125,8 +86,8 @@
     .table-hover tbody tr:hover td { background-color: #152441 !important; }
 
     .badge-asset { font-weight: 600; padding: 0.25rem 0.45rem; border-radius: 2px; font-size: 0.75rem; }
-    .badge-투자 { background-color: rgba(225, 82, 65, 0.2) !important; color: #f27263 !important; }
-    .badge-예금 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
+    .badge-투자, .badge-부동산 { background-color: rgba(225, 82, 65, 0.2) !important; color: #f27263 !important; }
+    .badge-예금, .badge-자동차 { background-color: rgba(65, 141, 241, 0.2) !important; color: #6cb1ff !important; }
     .badge-보험 { background-color: rgba(38, 166, 154, 0.2) !important; color: #4db6ac !important; }
     .badge-연금 { background-color: rgba(255, 179, 0, 0.2) !important; color: #ffd54f !important; }
     .badge-기타 { background-color: rgba(120, 136, 155, 0.2) !important; color: #b0bec5 !important; }
@@ -135,30 +96,31 @@
 </head>
 <body>
 
-  <!-- 🔒 잠금 화면 레이어 -->
   <div id="lockScreen">
     <div class="lock-box text-center">
       <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
       <h5 class="text-white fw-bold mb-2">보안 인증 시스템</h5>
       <p class="small mb-4" style="color: #9aa5b5;">금융 데이터 보호를 위해 비밀번호를 입력해 주세요.</p>
-      
       <input type="password" id="passwordInput" class="form-control lock-input mb-4" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter') verifyPassword()">
       <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
-      
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
     </div>
   </div>
 
-  <!-- 🏆 메인 대시보드 본문 -->
   <div class="container d-none" id="mainDashboard">
+    
+    <div class="main-nav-tabs" id="mainNavTabs">
+      <button class="nav-tab-btn active" onclick="switchMainTab('sheet1')">MY ASSET</button>
+      <button class="nav-tab-btn" onclick="switchMainTab('sheet2')">OUR ASSET</button>
+    </div>
+
     <div class="main-total-banner">
       <div class="row align-items-center">
         <div class="col-7 col-sm-8 text-start">
-          <div class="small fw-medium mb-1" style="color: #9aa5b5 !important;">총 보유자산</div>
+          <div class="small fw-medium mb-1" id="totalBannerTitle" style="color: #9aa5b5 !important;">총 보유자산</div>
           <div class="h2 fw-bold my-1 tracking-tight" id="grandTotalDisplay" style="font-size: 2.2rem; color: #e15241 !important;">0 KRW</div>
         </div>
         <div class="col-5 col-sm-4 text-end">
-          <!-- 🛠️ [수정] 모바일 깨짐 방지를 위해 문구를 'LIVE'로 압축 변경 -->
           <div class="sync-status">
             <span class="sync-dot"></span>
             <span>LIVE</span>
@@ -172,13 +134,8 @@
 
     <div class="filter-sort-row">
       <div class="section-title">🔍 자산별 상세 보유내역</div>
-      <div class="filter-tabs" id="filterTabs">
-        <button class="filter-btn active" onclick="filterCategory('전체')">전체</button>
-        <button class="filter-btn" onclick="filterCategory('투자')">투자</button>
-        <button class="filter-btn" onclick="filterCategory('예금')">예금</button>
-        <button class="filter-btn" onclick="filterCategory('보험')">보험</button>
-        <button class="filter-btn" onclick="filterCategory('연금')">연금</button>
-      </div>
+      <div class="filter-tabs" id="subFilterTabs">
+        </div>
       <div>
         <select class="form-select sort-select" id="sortSelect" onchange="sortData()">
           <option value="default">기본 순 정렬</option>
@@ -205,8 +162,11 @@
   </div>
 
   <script>
+    // 🔗 새로 제공해주신 완전한 구글 배포 주소 자동 매핑 완료
     const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbySYNatGZ6sgXmjZsl5QN-HWOMFuSDpqCgqgzWBOG0T7RoLPaJjfQuV5BK9lb988vJq/exec";
 
+    let rawServerData = null; 
+    let currentTabKey = 'sheet1'; 
     let currentAssetList = []; 
     let currentCategoryFilter = '전체';
 
@@ -214,11 +174,12 @@
       const password = document.getElementById("passwordInput").value;
       const errorDiv = document.getElementById("lockError");
       
+      // 설정하신 암호 1235 대조 인증 처리
       if (password === "1235") {
         errorDiv.classList.add('d-none');
         document.getElementById("lockScreen").classList.add('d-none');
         document.getElementById("mainDashboard").classList.remove('d-none');
-        await loadData();
+        await loadServerData();
       } else {
         errorDiv.classList.remove('d-none');
       }
@@ -232,83 +193,113 @@
       return isNaN(num) ? 0 : num;
     }
 
-    async function loadData() {
+    async function loadServerData() {
       try {
         const response = await fetch(MY_SECRET_URL + "?_=" + new Date().getTime());
-        const json = await response.json();
-        const rows = json.table?.rows || [];
-
-        const targetCategories = ['투자', '예금', '보험', '연금'];
-        const summaryMap = { '투자': 0, '예금': 0, '보험': 0, '연금': 0 };
-        let otherTotal = 0;
-        let grandTotal = 0; 
-        
-        currentAssetList = [];
-
-        for (let i = 0; i < rows.length; i++) {
-          if (!rows[i] || !rows[i].c) continue;
-          const cells = rows[i].c;
-
-          const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
-          const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
-          const juneNum = parseToNumber(cells[2]?.v);
-
-          if (
-            assetVal === '자산' || 
-            categoryVal === '구분' || 
-            assetVal === '' || 
-            assetVal.includes('계') || 
-            categoryVal.includes('계')
-          ) {
-            continue; 
-          }
-
-          grandTotal += juneNum; 
-
-          if (targetCategories.includes(categoryVal)) {
-            summaryMap[categoryVal] += juneNum;
-          } else {
-            otherTotal += juneNum;
-          }
-
-          currentAssetList.push({
-            asset: assetVal,
-            category: categoryVal !== '' ? categoryVal : '기타',
-            amount: juneNum,
-            formattedAmount: juneNum.toLocaleString('ko-KR') + ' KRW'
-          });
-        }
-        
-        document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
-
-        let summaryHTML = '';
-        targetCategories.forEach(category => {
-          const totalVal = summaryMap[category] || 0;
-          const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
-          summaryHTML += `
-            <div class="grid-item accent-${category}">
-              <div class="title">${category}</div>
-              <div class="amount">${totalVal.toLocaleString('ko-KR')}<span class="percent">${percentage}%</span></div>
-            </div>
-          `;
-        });
-
-        if (otherTotal > 0) {
-          const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
-          summaryHTML += `
-            <div class="grid-item accent-기타">
-              <div class="title">기타 자산</div>
-              <div class="amount">${otherTotal.toLocaleString('ko-KR')}<span class="percent">${otherPercentage}%</span></div>
-            </div>
-          `;
-        }
-        document.getElementById("summaryContainer").innerHTML = summaryHTML;
-
-        renderTable();
-
+        rawServerData = await response.json();
+        switchMainTab('sheet1');
       } catch (error) {
-        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 보안 데이터 동기화 실패 또는 연동 오류</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger py-5">⚠️ 데이터 동기화 실패 또는 연동 오류</td></tr>`;
       }
+    }
+
+    function switchMainTab(tabKey) {
+      currentTabKey = tabKey;
+      currentCategoryFilter = '전체';
+      
+      const tabs = document.querySelectorAll('#mainNavTabs .nav-tab-btn');
+      tabs[tabKey === 'sheet1' ? 0 : 1].classList.add('active');
+      tabs[tabKey === 'sheet1' ? 1 : 0].classList.remove('active');
+
+      document.getElementById("totalBannerTitle").innerText = tabKey === 'sheet1' ? "나의 총 보유자산" : "공동 및 배우자 총 자산";
+
+      processAndRenderData();
+    }
+
+    function processAndRenderData() {
+      if (!rawServerData || !rawServerData[currentTabKey]) return;
+      
+      const rows = rawServerData[currentTabKey].table?.rows || [];
+      currentAssetList = [];
+
+      let targetCategories = [];
+      if (currentTabKey === 'sheet1') {
+        targetCategories = ['투자', '예금', '보험', '연금'];
+      } else {
+        targetCategories = ['부동산', '자동차', '예금', '투자']; 
+      }
+
+      const summaryMap = {};
+      targetCategories.forEach(cat => summaryMap[cat] = 0);
+      let otherTotal = 0;
+      let grandTotal = 0;
+
+      const uniqueCategories = new Set();
+
+      for (let i = 0; i < rows.length; i++) {
+        if (!rows[i] || !rows[i].c) continue;
+        const cells = rows[i].c;
+
+        const assetVal = cells[0]?.v ? cells[0].v.toString().trim() : '';
+        const categoryVal = cells[1]?.v ? cells[1].v.toString().trim() : '';
+        const amountNum = parseToNumber(cells[2]?.v);
+
+        if (
+          assetVal === '자산' || categoryVal === '구분' || assetVal === '' || 
+          assetVal.includes('계') || categoryVal.includes('계')
+        ) {
+          continue; 
+        }
+
+        grandTotal += amountNum;
+        if (categoryVal !== '') uniqueCategories.add(categoryVal);
+
+        if (targetCategories.includes(categoryVal)) {
+          summaryMap[categoryVal] += amountNum;
+        } else {
+          otherTotal += amountNum;
+        }
+
+        currentAssetList.push({
+          asset: assetVal,
+          category: categoryVal !== '' ? categoryVal : '기타',
+          amount: amountNum,
+          formattedAmount: amountNum.toLocaleString('ko-KR') + ' KRW'
+        });
+      }
+
+      document.getElementById("grandTotalDisplay").innerHTML = `${grandTotal.toLocaleString('ko-KR')}<span class="fs-4 fw-normal" style="color: #9aa5b5 !important;"> KRW</span>`;
+
+      let summaryHTML = '';
+      targetCategories.forEach(category => {
+        const totalVal = summaryMap[category] || 0;
+        const percentage = grandTotal > 0 ? ((totalVal / grandTotal) * 100).toFixed(1) : 0;
+        summaryHTML += `
+          <div class="grid-item accent-${category}">
+            <div class="title">${category}</div>
+            <div class="amount">${totalVal.toLocaleString('ko-KR')}<span class="percent">${percentage}%</span></div>
+          </div>
+        `;
+      });
+
+      if (otherTotal > 0) {
+        const otherPercentage = grandTotal > 0 ? ((otherTotal / grandTotal) * 100).toFixed(1) : 0;
+        summaryHTML += `
+          <div class="grid-item accent-기타">
+            <div class="title">기타 자산</div>
+            <div class="amount">${otherTotal.toLocaleString('ko-KR')}<span class="percent">${otherPercentage}%</span></div>
+          </div>
+        `;
+      }
+      document.getElementById("summaryContainer").innerHTML = summaryHTML;
+
+      let filterHTML = `<button class="filter-btn active" onclick="filterCategory('전체')">전체</button>`;
+      uniqueCategories.forEach(cat => {
+        filterHTML += `<button class="filter-btn" onclick="filterCategory('${cat}')">${cat}</button>`;
+      });
+      document.getElementById("subFilterTabs").innerHTML = filterHTML;
+
+      renderTable();
     }
 
     function renderTable() {
@@ -323,8 +314,8 @@
 
       let bodyHTML = '';
       filteredList.forEach(item => {
-        const targetCategories = ['투자', '예금', '보험', '연금'];
-        const badgeClass = targetCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
+        const coreCategories = ['투자', '예금', '보험', '연금', '부동산', '자동차'];
+        const badgeClass = coreCategories.includes(item.category) ? `badge-${item.category}` : 'badge-기타';
 
         bodyHTML += '<tr>';
         bodyHTML += `<td class="fw-semibold text-white text-wrap" style="white-space: normal; min-width: 120px;">${item.asset}</td>`; 
@@ -338,7 +329,7 @@
 
     function filterCategory(category) {
       currentCategoryFilter = category;
-      const buttons = document.querySelectorAll('#filterTabs .filter-btn');
+      const buttons = document.querySelectorAll('#subFilterTabs .filter-btn');
       buttons.forEach(btn => {
         if (btn.innerText === category) btn.classList.add('active');
         else btn.classList.remove('active');
