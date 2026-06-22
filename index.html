@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>통합 자산관리 Dashboard</title>
+  <!-- 부트스트랩 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <!-- 프리텐다드 폰트 적용 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <style>
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -111,6 +113,7 @@
 </head>
 <body>
 
+  <!-- 🔒 잠금 화면 -->
   <div id="lockScreen">
     <div class="lock-box text-center">
       <div class="lock-logo">UPBIT STYLE DASHBOARD</div>
@@ -119,10 +122,11 @@
       <input type="password" id="passwordInput" class="form-control lock-input mb-4" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter') verifyPassword()">
       <button class="btn btn-primary w-100 lock-btn" onclick="verifyPassword()">인증 및 자산 동기화</button>
       <div id="lockError" class="error-msg d-none">❌ 비밀번호가 올바르지 않습니다. 다시 입력하세요.</div>
-      <div class="build-version">BUILD v1.6.1</div>
+      <div class="build-version">BUILD v1.6.2</div>
     </div>
   </div>
 
+  <!-- 🏆 메인 대시보드 -->
   <div class="container d-none" id="mainDashboard">
     
     <div class="main-nav-tabs" id="mainNavTabs">
@@ -140,7 +144,7 @@
         <div class="col-5 col-sm-4 text-end">
           <div class="sync-status">
             <span class="sync-dot"></span>
-            <span>LIVE</span>
+            <span id="syncText">LIVE</span>
           </div>
         </div>
       </div>
@@ -183,7 +187,6 @@
   </div>
 
   <script>
-    // 🔗 깨져있던 신규 웹 앱 URL 주소 정교하게 재정비 완료
     const MY_SECRET_URL = "https://script.google.com/macros/s/AKfycbwD9K7Z112cZNMYLpYw0PeblKg_Z8U1nOi47kxtSgmtDcXzEnfgnMRyG6tRR3oBF4U/exec"; 
 
     let rawServerData = null; 
@@ -197,6 +200,9 @@
 
     let touchStartX = 0;
     let touchEndX = 0;
+    
+    // 🔄 자동 새로고침 타이머 변수
+    let autoRefreshInterval = null; 
 
     async function verifyPassword() {
       const password = document.getElementById("passwordInput").value;
@@ -208,9 +214,36 @@
         document.getElementById("mainDashboard").classList.remove('d-none');
         await loadServerData();
         initSwipeGesture();
+        
+        // 🛠️ [고도화] 암호 통과 직후 백그라운드 5분 타이머 작동 격발 (5분 = 300,000ms)
+        startAutoRefreshTimer(300000);
       } else {
         errorDiv.classList.remove('d-none');
       }
+    }
+
+    // 🛠️ [신규] 5분마다 무자각 데이터를 호출해 맵핑해주는 인터벌 루프 함수
+    function startAutoRefreshTimer(ms) {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(async () => {
+        const syncText = document.getElementById("syncText");
+        try {
+          syncText.innerText = "SYNCING...";
+          syncText.style.color = "#418df1";
+          
+          const response = await fetch(MY_SECRET_URL + "?_=" + new Date().getTime());
+          rawServerData = await response.json();
+          
+          calculateAdvancedBalance();
+          processAndRenderData(); // 현재 보고 있는 탭 화면 리렌더링
+          
+          syncText.innerText = "LIVE";
+          syncText.style.color = "#00e676";
+        } catch (e) {
+          syncText.innerText = "CONN ERROR";
+          syncText.style.color = "#f27263";
+        }
+      }, ms);
     }
 
     function initSwipeGesture() {
